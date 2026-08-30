@@ -1,0 +1,8 @@
+model User {
+  id    String @id
+  email String
+
+  sessions Session[]
+
+  @@map("auth_user")
+}

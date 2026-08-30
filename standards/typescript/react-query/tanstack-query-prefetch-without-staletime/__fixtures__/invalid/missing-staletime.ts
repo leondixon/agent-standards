@@ -1,0 +1,1 @@
+prefetchQuery({ queryKey: ['x'], queryFn });

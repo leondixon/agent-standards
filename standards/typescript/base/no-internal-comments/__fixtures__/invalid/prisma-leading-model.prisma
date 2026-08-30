@@ -1,0 +1,4 @@
+/// Core user profile
+model User {
+  id String @id
+}
