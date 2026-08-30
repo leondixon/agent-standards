@@ -39,20 +39,69 @@ A rule declares *what kind of code* it governs — `any`, `backend`, `frontend`,
 `.standards/config.json`, so the same rule works in a single-package repo and a
 monorepo. A project with no `backend` layer never installs backend rules.
 
-## Cross-language principles
+## Languages
+
+A project has exactly one language, detected at `init` and stored in
+`.standards/config.json`:
+
+| Marker file | Language |
+|---|---|
+| `Cargo.toml` | `rust` |
+| `package.json` | `typescript` |
+
+Rules are then selected in three passes — language, then preset, then layer:
+
+```
+standards/core/**          always installed, whatever the language
+standards/<language>/**    only the detected language's tree
+```
+
+So a Rust project installs `standards/core/` plus `standards/rust/`, and never
+sees a TypeScript rule. Change the `language` field in `.standards/config.json` to
+override the detection.
+
+> A repo containing both `Cargo.toml` and `package.json` resolves to `rust` and
+> installs nothing from the TypeScript tree. Run the CLI against each package
+> directory separately, or set `language` by hand.
+
+### Current coverage
+
+| Language | Core | Own rules |
+|---|---|---|
+| TypeScript | 8 | 38 across 10 presets |
+| Rust | 8 | none yet — `standards/rust/` is scaffolding |
+
+A Rust project today gets the 8 cross-language principles with Rust examples, and
+nothing more. Rust-specific rules (an `unwrap`/`expect` policy, error handling)
+have no TypeScript analogue and are not written yet.
+
+### Cross-language principles
 
 Rules under `standards/core/` are language-neutral: the principle is written once,
-with per-language expression files supplying examples and enforcement.
+with per-language expression files supplying the examples.
 
 ```
 standards/core/prefer-get-over-find/
-├─ rule.md
+├─ rule.md                 the principle
 └─ languages/
-   ├─ typescript.md
-   └─ rust.md
+   ├─ typescript.md        getAccounts, get-accounts.ts
+   └─ rust.md              get_accounts, get_accounts.rs
 ```
 
-Editing the principle updates every language at once.
+Sync appends the expression matching the project's language, so the same principle
+reads in the idiom of the language it lands in. Editing `rule.md` updates every
+language at once; a missing expression file falls back to the principle alone.
+
+## Adding a language
+
+1. `mkdir -p standards/<language>/base`
+2. Add `standards/<language>/presets.json` with at least `{"base": {"always": true}}`
+3. Add a `languages/<language>.md` expression to each rule in `standards/core/`
+4. Extend `LANGUAGE_LAYERS` in `packages/cli/src/lib/layers.js` with its layer globs
+5. Extend `detectLanguage` in `packages/cli/src/lib/detect.js` with its marker file
+
+Only step 1 and 2 are required to make the language selectable; the rest improve
+what it installs.
 
 ## Drift
 
