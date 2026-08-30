@@ -6,7 +6,7 @@ so prose and enforcement cannot drift.
 ```
 standards/<language>/<preset>/<rule-id>/
 ├─ rule.md            required — prose + frontmatter
-├─ rule.js            optional — ESLint implementation
+├─ rule.js            optional — ESLint / Oxlint JS-plugin implementation
 ├─ hook.sh            optional — agent-time nudge
 └─ __fixtures__/      required when rule.js exists
    ├─ valid/*.js
@@ -33,9 +33,12 @@ title: No type assertions       # sentence case, used as the H1
 layer: any                      # any | backend | frontend | schema | test
 presets: [base]                 # which presets include this rule
 severity: error                 # error | warn
-outputs: [mdc, agents-md, eslint, hook]
+outputs: [mdc, agents-md, eslint, oxlint, hook]
 eslint:                         # only when this rule maps to a lint rule
   rule: ts/consistent-type-assertions
+  options: { assertionStyle: never }
+oxlint:                         # optional — derived from eslint: when omitted
+  rule: typescript/consistent-type-assertions
   options: { assertionStyle: never }
 ---
 ```
@@ -48,9 +51,10 @@ eslint:                         # only when this rule maps to a lint rule
 | `title` | yes | Human title. Becomes the `.mdc` H1. |
 | `layer` | yes | **Semantic** target, never a path. Resolved to globs at sync time from the consuming repo's `.standards/config.json`. |
 | `presets` | yes | Presets that install this rule. `base` is always installed. |
-| `severity` | yes | Severity in generated ESLint config. |
-| `outputs` | yes | Which artefacts to generate. |
+| `severity` | yes | Severity in generated ESLint and Oxlint configs. |
+| `outputs` | yes | Which artefacts to generate. An `eslint` output also writes `.standards/.oxlintrc.json` on sync. |
 | `eslint` | no | Maps to an existing lint rule (`rule` + `options`), or set `own: true` when `rule.js` in this directory provides the implementation. |
+| `oxlint` | no | Same shape as `eslint`. Own implementations reuse `rule.js` via Oxlint JS plugins. Mapped names such as `ts/foo` become `typescript/foo`. Omit to derive from `eslint`. |
 | `options` | no | JSON Schema defaults fed to an own-implementation rule. Values sourced from `.standards/config.json` use `$layer` / `$modules` placeholders. |
 
 ## Layers

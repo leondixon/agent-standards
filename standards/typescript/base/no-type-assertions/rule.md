@@ -4,10 +4,13 @@ title: No type assertions
 layer: any
 presets: [base]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [mdc, agents-md, eslint, oxlint]
 eslint:
   rule: ts/consistent-type-assertions
   requires: '@antfu/eslint-config or typescript-eslint (as `ts`)'
+  options: { assertionStyle: never }
+oxlint:
+  rule: typescript/consistent-type-assertions
   options: { assertionStyle: never }
 ---
 

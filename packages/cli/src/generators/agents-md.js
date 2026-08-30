@@ -6,8 +6,12 @@ function firstSentence(body) {
 }
 
 function reference(rule) {
-  if (rule.eslint?.own) return ` (\`standards/${rule.id}\`)`
+  if (rule.eslint?.own || rule.oxlint?.own) return ` (\`standards/${rule.id}\`)`
+  if (rule.eslint?.rule && rule.oxlint?.rule && rule.oxlint.rule !== rule.eslint.rule) {
+    return ` (\`${rule.eslint.rule}\` / \`${rule.oxlint.rule}\`)`
+  }
   if (rule.eslint?.rule) return ` (\`${rule.eslint.rule}\`)`
+  if (rule.oxlint?.rule) return ` (\`${rule.oxlint.rule}\`)`
   return ''
 }
 
