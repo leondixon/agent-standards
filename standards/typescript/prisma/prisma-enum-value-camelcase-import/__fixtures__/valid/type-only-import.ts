@@ -1,3 +1,3 @@
-import type { CreditReportBureauName } from '../generated/prisma/enums';
+import type { OrderStatus } from '../generated/prisma/enums';
 
-export type Bureau = CreditReportBureauName;
+export type Status = OrderStatus;

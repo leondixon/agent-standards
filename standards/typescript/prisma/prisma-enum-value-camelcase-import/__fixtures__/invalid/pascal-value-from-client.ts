@@ -1,3 +1,3 @@
-import { CreditReportBureauName } from '../generated/prisma/client';
+import { OrderStatus } from '../generated/prisma/client';
 
-export const bureau = CreditReportBureauName.transunion;
+export const status = OrderStatus.pending;

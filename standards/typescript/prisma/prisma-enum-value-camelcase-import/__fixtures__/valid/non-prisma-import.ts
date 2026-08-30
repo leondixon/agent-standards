@@ -1,3 +1,3 @@
-import { CreditReportBureauName } from '../somewhere-else/enums';
+import { OrderStatus } from '../somewhere-else/enums';
 
-export const bureau = CreditReportBureauName.transunion;
+export const status = OrderStatus.pending;

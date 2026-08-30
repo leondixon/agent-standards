@@ -68,7 +68,7 @@ jq -n --arg file "$file_path" --arg names "$names_list" '{
   additional_context: (
     "Avoid By* qualifiers in names for \($file):\n"
     + $names
-    + "\nLookup keys (customerId, userId, id, bureau, …) are interface details — keep them "
+    + "\nLookup keys (customerId, userId, id, …) are interface details — keep them "
     + "on the path/schema/parameter/arguments, not in collaborator, handler, describe, or "
     + "operationId names. Prefer getFinancialAccounts over getFinancialAccountsByCustomerId "
     + "(and likewise avoid *ByUserId*, *ById*, find_by_*, etc.)."

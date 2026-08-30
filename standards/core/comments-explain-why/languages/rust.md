@@ -12,6 +12,6 @@ counter += 1;
 ## Good
 
 ```rust
-// Bureau rate-limits to one pull per 24h; a second call returns 429 not fresh data.
+// Upstream rate-limits to one pull per 24h; a second call returns 429, not fresh data.
 if !has_recent_report(db, customer_id).await? { … }
 ```

@@ -14,19 +14,19 @@ Prisma generates enum constants as PascalCase. When importing them as values, al
 ## Bad
 
 ```ts
-import { CreditReportBureauName } from '../generated/prisma/enums'
-const bureau = CreditReportBureauName.transunion
+import { OrderStatus } from '../generated/prisma/enums'
+const status = OrderStatus.pending
 ```
 
 ## Good
 
 ```ts
 import {
-  CreditReportBureauName as creditReportBureauName,
-  type CreditReportBureauName,
+  OrderStatus as orderStatus,
+  type OrderStatus,
 } from '../generated/prisma/enums'
 
-const bureau: CreditReportBureauName = creditReportBureauName.transunion
+const status: OrderStatus = orderStatus.pending
 ```
 
 `Prisma` and `PrismaClient` stay PascalCase.
