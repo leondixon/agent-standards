@@ -46,6 +46,28 @@ export function writeLock(root, lock) {
   writeFileSync(path, `${JSON.stringify(lock, undefined, 2)}\n`)
 }
 
+const BASE_DIR = 'base'
+
+export function basePath(root, relativePath) {
+  return join(root, CONFIG_DIR, BASE_DIR, relativePath)
+}
+
+/**
+ * The upstream text a file was last reconciled against. Kept so a later
+ * conflict can be merged three-way instead of guessing which side changed.
+ */
+export function readBase(root, relativePath) {
+  const path = basePath(root, relativePath)
+  if (!existsSync(path)) return undefined
+  return readFileSync(path, 'utf8')
+}
+
+export function writeBase(root, relativePath, content) {
+  const path = basePath(root, relativePath)
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, content)
+}
+
 export function hash(content) {
   return createHash('sha256').update(content).digest('hex').slice(0, 16)
 }

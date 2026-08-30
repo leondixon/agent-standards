@@ -1,9 +1,9 @@
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { buildArtefacts, planSync, summarise } from '../lib/plan.js'
-import { hash, lockEntry, readConfig, readLock, writeLock } from '../lib/config.js'
+import { CONFIG_DIR, hash, lockEntry, readBase, readConfig, readLock, writeBase, writeLock } from '../lib/config.js'
+import { buildConflict, clearConflicts, writeConflicts } from '../lib/conflicts.js'
 import { loadStandards, invalidRules } from '../lib/rules.js'
-import { choose, isInteractive } from '../lib/prompt.js'
 import { STATE_MARK, line, style } from '../lib/ui.js'
 
 const WRITE_STATES = new Set(['missing', 'stale', 'deleted'])
@@ -78,41 +78,45 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
     return 1
   }
 
+  const conflicts = []
+
   for (const entry of plan) {
     if (WRITE_STATES.has(entry.state)) {
       writeArtefact(targetRoot, entry)
+      writeBase(targetRoot, entry.path, entry.content)
       lock.files[entry.path] = lockEntry(hash(entry.content), hash(entry.content))
       continue
     }
 
     if (entry.state !== 'drifted' && entry.state !== 'untracked') continue
 
-    const current = readFileSync(join(targetRoot, entry.path), 'utf8')
-    line()
-    line(`  ${style.yellow('!')} ${entry.path} has local changes`)
-    line()
-    line(unifiedDiff(current, entry.content))
-    line()
-
-    const action = await choose('    keep mine / take theirs / skip?', [
-      { key: 'k', value: 'keep' },
-      { key: 't', value: 'theirs' },
-      { key: 's', value: 'skip' },
-    ], isInteractive() ? 'skip' : 'keep')
-
-    if (action === 'theirs') {
-      writeArtefact(targetRoot, entry)
-      lock.files[entry.path] = lockEntry(hash(entry.content), hash(entry.content))
-    }
-    else if (action === 'keep') {
-      lock.files[entry.path] = lockEntry(hash(current), hash(entry.content))
-    }
+    conflicts.push(buildConflict(targetRoot, entry, readBase(targetRoot, entry.path)))
   }
 
   writeLock(targetRoot, lock)
+  writeConflicts(targetRoot, conflicts)
+
+  const written = counts.missing + counts.stale + counts.deleted
 
   line()
-  line(`  ${style.green('✓')} synced ${counts.missing + counts.stale} artefact(s)`)
+  if (written > 0) line(`  ${style.green('✓')} synced ${written} artefact(s)`)
+
+  if (conflicts.length === 0) {
+    if (written === 0) line(`  ${style.green('✓')} nothing to do`)
+    line()
+    return 0
+  }
+
   line()
-  return 0
+  line(`  ${style.yellow(`${conflicts.length} conflict(s)`)} — these rules changed upstream and locally:`)
+  line()
+  for (const conflict of conflicts) line(`    ${style.yellow('!')} ${conflict.rule}`)
+  line()
+  line(`  Run ${style.bold('/resolve-standards-conflicts')} in your agent to merge them,`)
+  line(`  or resolve by hand and run ${style.bold('standards resolve <rule>')}.`)
+  line()
+  line(style.dim(`  Details: ${CONFIG_DIR}/conflicts.json`))
+  line()
+
+  return 2
 }

@@ -14,6 +14,7 @@ node packages/cli/src/index.js init ~/code/my-project
 | `init [dir]` | Detect languages and stack, infer a layer map, install everything |
 | `sync [dir]` | Add missing rules, update stale ones, prompt on local edits |
 | `check [dir]` | Report drift without writing; exits 1 when out of date (CI) |
+| `resolve <rule>` | Mark a conflict merged after editing the file |
 | `list` | Show every rule in the source |
 | `build` | Regenerate the ESLint plugin after adding or changing rules |
 
@@ -116,13 +117,48 @@ language at once; a missing expression file falls back to the principle alone.
 Only step 1 and 2 are required to make the language selectable; the rest improve
 what it installs.
 
-## Drift
+## Drift and conflicts
 
-`init` records a hash of every file it writes. On later syncs:
+Every file sync writes is recorded in `.standards/lock.json` as two hashes — the
+file as it stands, and the upstream text it was reconciled against:
 
-- **unchanged** files update silently
-- **locally edited** files stop and show a diff — keep mine, take theirs, or skip
-- **kept** edits are pinned and stay quiet until the upstream rule changes, then ask again
+```json
+".cursor/rules/no-null.mdc": {
+  "local":  "498e953d51112a69",
+  "source": "e7ab21768adbd20e"
+}
+```
+
+Those two are what make each state distinguishable, **per rule**. Bumping a version
+only touches rules whose content actually changed; the rest stay silent.
+
+| Your file | Upstream | Result |
+|---|---|---|
+| untouched | changed | **stale** — applied silently |
+| edited | unchanged | **pinned** — left alone |
+| edited | changed | **conflict** — needs a merge |
+
+### Resolving a conflict
+
+Sync writes every conflict to `.standards/conflicts.json` and exits `2`:
+
+```
+  1 conflict(s) — these rules changed upstream and locally:
+
+    ! no-null
+
+  Run /resolve-standards-conflicts in your agent to merge them,
+  or resolve by hand and run standards resolve <rule>.
+```
+
+Each conflict carries `mine`, `theirs`, and `base` — the upstream text you last
+reconciled against — so the merge is genuinely three-way rather than a guess. The
+`resolve-standards-conflicts` skill is installed into the project, so Claude Code
+and Cursor pick it up without being told the procedure.
+
+After merging, `standards resolve <rule>` records the merged file against the
+upstream text it was merged with. That rule then stays quiet until it changes
+again — at which point it conflicts once more, showing only the *new* change.
 
 ## Presets
 

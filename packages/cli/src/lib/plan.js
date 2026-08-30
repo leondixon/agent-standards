@@ -67,6 +67,15 @@ export function buildArtefacts(rules, config) {
     rule: '(agents md)',
   })
 
+  artefacts.push({
+    path: join('.standards', 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
+    content: readFileSync(
+      join(config.sourcePath, 'templates', 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
+      'utf8',
+    ),
+    rule: '(conflict skill)',
+  })
+
   const hookRules = selected.filter(rule => rule.outputs.includes('hook') && rule.hookPath)
 
   if (hookRules.length > 0) {
