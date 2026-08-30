@@ -48,7 +48,7 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   }
 
   const lock = readLock(targetRoot)
-  const artefacts = buildArtefacts(rules, config)
+  const artefacts = buildArtefacts(rules, { ...config, sourcePath: sourceRoot })
   const plan = planSync(targetRoot, artefacts, lock)
   const counts = summarise(plan)
 

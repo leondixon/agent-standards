@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileState } from './config.js'
 import { appliesTo } from './layers.js'
-import { generateAgentsMd, generateEslintConfig, generateMdc } from '../generators/index.js'
+import { generateAgentsMd, generateClaudeHooks, generateCursorHooks, generateEslintConfig, generateMdc } from '../generators/index.js'
 
 export function selectRules(rules, config) {
   const presets = new Set(config.presets)
@@ -63,6 +63,27 @@ export function buildArtefacts(rules, config) {
     content: generateAgentsMd(selected),
     rule: '(agents md)',
   })
+
+  const hookRules = selected.filter(rule => rule.outputs.includes('hook') && rule.hookPath)
+
+  if (hookRules.length > 0) {
+    artefacts.push({
+      path: join('.standards', 'hook-lib', 'diff.sh'),
+      content: readFileSync(join(config.sourcePath, 'templates', 'hook-lib', 'diff.sh'), 'utf8'),
+      rule: '(hook library)',
+      executable: true,
+    })
+    artefacts.push({
+      path: join('.cursor', 'hooks.json'),
+      content: generateCursorHooks(hookRules),
+      rule: '(cursor hooks)',
+    })
+    artefacts.push({
+      path: join('.standards', 'claude-hooks.json'),
+      content: generateClaudeHooks(hookRules),
+      rule: '(claude hooks)',
+    })
+  }
 
   return artefacts
 }
