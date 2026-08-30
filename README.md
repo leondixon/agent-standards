@@ -4,7 +4,24 @@ Portable coding standards with one source of truth per rule. Prose, lint rules, 
 agent hooks are all generated from the same directory, so they cannot drift apart.
 
 ```sh
-node packages/cli/src/index.js init ~/code/my-project
+npx @leondixon/agent-standards init
+```
+
+That scaffolds the project and adds itself as a pinned devDependency, so later
+syncs are reproducible:
+
+```sh
+npx standards sync      # apply rule updates after a version bump
+npx standards check     # CI — exits non-zero when out of date
+```
+
+Wire the generated ESLint config into your own:
+
+```js
+// eslint.config.js
+import { standardsConfig } from './.standards/eslint.config.js'
+
+export default standardsConfig
 ```
 
 ## Commands

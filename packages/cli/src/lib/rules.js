@@ -38,9 +38,6 @@ function validate(rule) {
   if (rule.eslint?.own && !rule.implementationPath) {
     problems.push('`eslint.own` is set but the directory has no `rule.js`')
   }
-  if (rule.eslint?.own && !existsSync(join(rule.path, '__fixtures__'))) {
-    problems.push('own ESLint implementation requires `__fixtures__/`')
-  }
   if (rule.outputs?.includes('hook') && !rule.hookPath) {
     problems.push('declares the `hook` output but has no `hook.sh`')
   }
@@ -109,4 +106,20 @@ export function loadStandards(root) {
 
 export function invalidRules(rules) {
   return rules.filter(rule => rule.problems.length > 0)
+}
+
+/**
+ * Authoring-only checks. Fixtures are excluded from the published package, so
+ * these run against a source checkout — never against an installed copy.
+ */
+export function authoringProblems(rules) {
+  return rules
+    .map((rule) => {
+      const problems = []
+      if (rule.eslint?.own && !existsSync(join(rule.path, '__fixtures__'))) {
+        problems.push('own ESLint implementation requires `__fixtures__/`')
+      }
+      return { ...rule, problems }
+    })
+    .filter(rule => rule.problems.length > 0)
 }

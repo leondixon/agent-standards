@@ -1,6 +1,7 @@
 import { resolveGlobs } from '../lib/layers.js'
 
 const PLUGIN = 'standards'
+const PACKAGE = '@leondixon/agent-standards/eslint-plugin'
 
 function ruleName(rule) {
   return rule.eslint.own ? `${PLUGIN}/${rule.id}` : rule.eslint.rule
@@ -17,7 +18,9 @@ function groupKey(globs) {
 }
 
 export function generateEslintConfig(rules, layerMap) {
-  const included = rules.filter(rule => rule.outputs.includes('eslint'))
+  const all = rules.filter(rule => rule.outputs.includes('eslint'))
+  const external = all.filter(rule => rule.eslint.requires)
+  const included = all.filter(rule => !rule.eslint.requires)
   const groups = new Map()
 
   for (const rule of included) {
@@ -38,13 +41,29 @@ export function generateEslintConfig(rules, layerMap) {
     return `  {\n    files: ${JSON.stringify(group.files)},\n    rules: {\n${entries}\n    },\n  },`
   })
 
+  const externalBlock = external.length === 0
+    ? []
+    : [
+        '',
+        '// These map to rules from plugins this package does not bundle. Spread',
+        '// `externalStandards` into your config once those plugins are present.',
+        'export const externalStandards = [',
+        ...external.map((rule) => {
+          const globs = resolveGlobs(rule, layerMap)
+          if (!globs) return ''
+          return `  // requires ${rule.eslint.requires}\n  {\n    files: ${JSON.stringify(globs)},\n    rules: { '${rule.eslint.rule}': ${JSON.stringify(ruleEntry(rule))} },\n  },`
+        }).filter(Boolean),
+        ']',
+      ]
+
   return [
-    `import ${PLUGIN} from '@agent-standards/eslint-plugin'`,
+    `import ${PLUGIN} from '${PACKAGE}'`,
     '',
     'export const standardsConfig = [',
     `  { plugins: { ${PLUGIN} } },`,
     ...blocks,
     ']',
+    ...externalBlock,
     '',
     'export default standardsConfig',
     '',

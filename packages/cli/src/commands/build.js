@@ -1,12 +1,12 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { generateEslintPlugin } from '../generators/index.js'
-import { invalidRules, loadStandards } from '../lib/rules.js'
+import { authoringProblems, invalidRules, loadStandards } from '../lib/rules.js'
 import { line, style } from '../lib/ui.js'
 
 export function buildCommand(sourceRoot) {
   const rules = loadStandards(sourceRoot)
-  const invalid = invalidRules(rules)
+  const invalid = [...invalidRules(rules), ...authoringProblems(rules)]
 
   if (invalid.length > 0) {
     line(style.red(`${invalid.length} invalid rule(s):`))

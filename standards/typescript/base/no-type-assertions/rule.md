@@ -7,6 +7,7 @@ severity: error
 outputs: [mdc, agents-md, eslint]
 eslint:
   rule: ts/consistent-type-assertions
+  requires: '@antfu/eslint-config or typescript-eslint (as `ts`)'
   options: { assertionStyle: never }
 ---
 

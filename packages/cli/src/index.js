@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { buildCommand } from './commands/build.js'
 import { initCommand } from './commands/init.js'
 import { listCommand } from './commands/list.js'
 import { resolveCommand } from './commands/resolve.js'
 import { syncCommand } from './commands/sync.js'
+import { findSourceRoot } from './lib/source-root.js'
 import { line, style } from './lib/ui.js'
 
-const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const SOURCE_ROOT = findSourceRoot()
 
 function usage() {
   line(`${style.bold('standards')} — portable coding standards`)

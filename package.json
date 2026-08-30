@@ -1,11 +1,64 @@
 {
-  "name": "agent-standards",
+  "name": "@leondixon/agent-standards",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Portable coding standards: one rule source, generated prose, lint rules, and agent hooks",
+  "license": "MIT",
+  "author": "Leon Dixon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leondixon/agent-standards.git"
+  },
+  "homepage": "https://github.com/leondixon/agent-standards#readme",
+  "bugs": {
+    "url": "https://github.com/leondixon/agent-standards/issues"
+  },
+  "keywords": [
+    "eslint",
+    "eslint-plugin",
+    "coding-standards",
+    "cursor",
+    "claude-code",
+    "agent",
+    "linting"
+  ],
+  "bin": {
+    "standards": "packages/cli/src/index.js"
+  },
+  "exports": {
+    ".": "./packages/cli/src/index.js",
+    "./eslint-plugin": "./packages/eslint-plugin/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "packages/cli/src/**/*.js",
+    "!packages/cli/src/**/*.test.js",
+    "packages/eslint-plugin/index.js",
+    "standards/**/rule.md",
+    "standards/**/rule.js",
+    "standards/**/hook.sh",
+    "standards/**/lib/*.mjs",
+    "standards/**/languages/*.md",
+    "standards/*/presets.json",
+    "!standards/**/__fixtures__/**",
+    "templates",
+    "docs/rule-schema.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "eslint": ">=9.10.0"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
+  },
   "scripts": {
     "test": "vitest run",
+    "build": "node packages/cli/src/index.js build",
+    "prepublishOnly": "npm run build && npm test",
     "standards": "node packages/cli/src/index.js"
   },
   "devDependencies": {
