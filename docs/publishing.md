@@ -1,28 +1,39 @@
 # Publishing to npm
 
-The package is `@leondixon/agent-standards`. Scoped packages are **private by
-default**, so publishing needs `--access public` the first time.
+The package is `@leondixon/agent-standards`, published under the **`leondixon`
+npm organisation**. Scoped packages are **private by default**, so publishing needs
+`--access public` the first time.
 
 ## One-time setup
 
-1. Create an npm account at [npmjs.com/signup](https://www.npmjs.com/signup) if you
-   do not have one. The scope `@leondixon` must match your npm username.
-
-2. Log in from the terminal:
+1. Log in from the terminal:
 
    ```sh
    npm login
    ```
 
-   Confirm it worked:
+   Confirm which account you are on — note this is your personal username, which is
+   *not* the same as the org scope:
 
    ```sh
    npm whoami
    ```
 
+2. Confirm your account can publish to the org. You need the **Developer** role or
+   higher on a team with write access to the package:
+
+   ```sh
+   npm org ls leondixon
+   ```
+
+   If your username is missing, add it from
+   **npmjs.com → Organisations → leondixon → Members**.
+
 3. Enable two-factor auth on the account (npm prompts for it on publish once set).
    For CI publishing, create an automation token instead:
-   **npmjs.com → Access Tokens → Generate → Automation**.
+   **npmjs.com → Access Tokens → Generate → Automation**. The token inherits the
+   permissions of the account that created it, so that account also needs org
+   write access.
 
 ## Before every publish
 
