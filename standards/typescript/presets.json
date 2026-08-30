@@ -1,0 +1,12 @@
+{
+  "base": { "always": true, "description": "Framework-agnostic TypeScript standards" },
+  "prisma": { "dependencies": ["prisma", "@prisma/client"], "description": "Prisma ORM" },
+  "hono": { "dependencies": ["hono"], "description": "Hono HTTP framework" },
+  "react": { "dependencies": ["react"], "description": "React and Radix primitives" },
+  "react-query": { "dependencies": ["@tanstack/react-query", "@tanstack/react-table"], "description": "TanStack Query and Table" },
+  "react-hook-form": { "dependencies": ["react-hook-form"], "description": "React Hook Form" },
+  "tailwind": { "dependencies": ["tailwindcss"], "description": "Tailwind CSS" },
+  "testing": { "dependencies": ["vitest", "@playwright/test"], "description": "Vitest and Playwright" },
+  "zod": { "dependencies": ["zod"], "description": "Zod schemas" },
+  "next": { "dependencies": ["next", "undici"], "description": "Next.js and server fetch" }
+}

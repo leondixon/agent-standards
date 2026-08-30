@@ -1,0 +1,10 @@
+{
+  "name": "@agent-standards/eslint-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "index.js",
+  "files": ["index.js"],
+  "peerDependencies": {
+    "eslint": ">=9.10.0"
+  }
+}

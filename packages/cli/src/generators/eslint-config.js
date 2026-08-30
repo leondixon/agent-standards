@@ -39,10 +39,10 @@ export function generateEslintConfig(rules, layerMap) {
   })
 
   return [
-    "import standards from '@agent-standards/eslint-plugin'",
+    `import ${PLUGIN} from '@agent-standards/eslint-plugin'`,
     '',
     'export const standardsConfig = [',
-    `  { plugins: { ${PLUGIN}: standards } },`,
+    `  { plugins: { ${PLUGIN} } },`,
     ...blocks,
     ']',
     '',
