@@ -1,0 +1,17 @@
+{
+  "name": "agent-standards",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable coding standards: one rule source, generated prose, lint rules, and agent hooks",
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "build": "pnpm --filter @agent-standards/eslint-plugin build",
+    "test": "vitest run",
+    "standards": "node packages/cli/src/index.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.10.0",
+    "vitest": "^2.1.8"
+  }
+}
