@@ -4,7 +4,7 @@ import { parseFrontmatter } from './frontmatter.js'
 
 const LAYERS = new Set(['any', 'backend', 'frontend', 'schema', 'test'])
 const SEVERITIES = new Set(['error', 'warn'])
-const OUTPUTS = new Set(['mdc', 'agents-md', 'eslint', 'hook'])
+const OUTPUTS = new Set(['mdc', 'agents-md', 'eslint', 'oxlint', 'hook'])
 const REQUIRED = ['id', 'title', 'layer', 'presets', 'severity', 'outputs']
 
 function directoriesIn(path) {
@@ -37,6 +37,12 @@ function validate(rule) {
   }
   if (rule.eslint?.own && !rule.implementationPath) {
     problems.push('`eslint.own` is set but the directory has no `rule.js`')
+  }
+  if (rule.outputs?.includes('oxlint') && !rule.oxlint && !rule.eslint) {
+    problems.push('declares the `oxlint` output but has no `oxlint:` or `eslint:` block')
+  }
+  if (rule.oxlint?.own && !rule.implementationPath) {
+    problems.push('`oxlint.own` is set but the directory has no `rule.js`')
   }
   if (rule.outputs?.includes('hook') && !rule.hookPath) {
     problems.push('declares the `hook` output but has no `hook.sh`')

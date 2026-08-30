@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileState } from './config.js'
 import { appliesTo } from './layers.js'
-import { generateAgentsMd, generateClaudeHooks, generateCursorHooks, generateEslintConfig, generateMdc } from '../generators/index.js'
+import { generateAgentsMd, generateClaudeHooks, generateCursorHooks, generateEslintConfig, generateMdc, generateOxlintConfig } from '../generators/index.js'
 
 export function selectRules(rules, config) {
   const presets = new Set(config.presets)
@@ -51,6 +51,9 @@ export function buildArtefacts(rules, config) {
     eslint: rule.eslint
       ? { ...rule.eslint, options: substituteOptions(rule.eslint.options, config) }
       : undefined,
+    oxlint: rule.oxlint
+      ? { ...rule.oxlint, options: substituteOptions(rule.oxlint.options, config) }
+      : undefined,
   }))
 
   if (withOptions.some(rule => rule.outputs.includes('eslint'))) {
@@ -58,6 +61,14 @@ export function buildArtefacts(rules, config) {
       path: join('.standards', 'eslint.config.js'),
       content: generateEslintConfig(withOptions, config.layers),
       rule: '(eslint config)',
+    })
+  }
+
+  if (withOptions.some(rule => rule.outputs.includes('eslint') || rule.outputs.includes('oxlint'))) {
+    artefacts.push({
+      path: join('.standards', '.oxlintrc.json'),
+      content: generateOxlintConfig(withOptions, config.layers),
+      rule: '(oxlint config)',
     })
   }
 

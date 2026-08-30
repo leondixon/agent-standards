@@ -1,7 +1,8 @@
 # agent-standards
 
-Portable coding standards with one source of truth per rule. Prose, lint rules, and
-agent hooks are all generated from the same directory, so they cannot drift apart.
+Portable coding standards with one source of truth per rule. Prose, lint rules
+(ESLint and Oxlint), and agent hooks are all generated from the same directory,
+so they cannot drift apart.
 
 ```sh
 npx @leondixon/agent-standards init
@@ -24,6 +25,18 @@ import { standardsConfig } from './.standards/eslint.config.js'
 export default standardsConfig
 ```
 
+Oxlint gets the same rules. Own implementations load through Oxlint's JS plugin
+API; mapped ESLint rules become native Oxlint rules (`ts/…` → `typescript/…`).
+The generated file only enables standards rules — it does not change Oxlint's
+default categories:
+
+```json
+// .oxlintrc.json
+{
+  "extends": ["./.standards/.oxlintrc.json"]
+}
+```
+
 ## Commands
 
 | Command | Does |
@@ -42,13 +55,13 @@ One directory per standard. See [docs/rule-schema.md](docs/rule-schema.md).
 ```
 standards/typescript/base/no-type-assertions/
 ├─ rule.md            prose + frontmatter — the source of truth
-├─ rule.js            optional ESLint implementation
+├─ rule.js            optional ESLint / Oxlint implementation
 ├─ hook.sh            optional agent-time nudge
 └─ __fixtures__/      valid/ + invalid/
 ```
 
 From that, sync generates `.cursor/rules/*.mdc`, an `AGENTS.md` section, a flat
-ESLint config, and hook wiring for both Cursor and Claude Code.
+ESLint config, an Oxlint config, and hook wiring for both Cursor and Claude Code.
 
 ## Layers, not paths
 

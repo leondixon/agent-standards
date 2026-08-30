@@ -2,9 +2,9 @@
  * Flag comments that explain WHAT instead of naming:
  *  1. Leading `//` or `/* *\/` blocks above any declaration (including exports).
  *  2. Trailing `//` end-of-line comments.
- * Pragmas (`eslint-*`, `@ts-*`, `biome-ignore`, `prettier-ignore`) are ignored.
+ * Pragmas (`eslint-*`, `oxlint-*`, `@ts-*`, `biome-ignore`, `prettier-ignore`) are ignored.
  */
-const PRAGMA_RE = /^(eslint-|@ts-|biome-ignore|prettier-ignore)/;
+const PRAGMA_RE = /^(eslint-|oxlint-|@ts-|biome-ignore|prettier-ignore)/;
 
 function isPragma(value) {
   return PRAGMA_RE.test(value.trim());
