@@ -15,6 +15,7 @@ node packages/cli/src/index.js init ~/code/my-project
 | `sync [dir]` | Add missing rules, update stale ones, prompt on local edits |
 | `check [dir]` | Report drift without writing; exits 1 when out of date (CI) |
 | `list` | Show every rule in the source |
+| `build` | Regenerate the ESLint plugin after adding or changing rules |
 
 ## How a rule is stored
 

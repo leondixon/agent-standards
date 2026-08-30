@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { buildCommand } from './commands/build.js'
 import { initCommand } from './commands/init.js'
 import { listCommand } from './commands/list.js'
 import { syncCommand } from './commands/sync.js'
@@ -15,6 +16,7 @@ function usage() {
   line('  sync [dir]     add missing rules, update stale, prompt on drift')
   line('  check [dir]    report drift without writing (exit 1 when out of date)')
   line('  list           show every rule in the source')
+  line('  build          regenerate the ESLint plugin from the rule source')
   line()
 }
 
@@ -24,6 +26,9 @@ const targetRoot = resolve(target ?? process.cwd())
 switch (command) {
   case 'list':
     listCommand(SOURCE_ROOT)
+    break
+  case 'build':
+    process.exitCode = buildCommand(SOURCE_ROOT)
     break
   case 'init':
     process.exitCode = await initCommand(SOURCE_ROOT, targetRoot)
