@@ -188,6 +188,11 @@ opted into early:
 Presets are scoped to a language, so `hono` only ever applies to TypeScript files.
 In a polyglot project each preset is labelled with the language that supplies it.
 
+## Publishing
+
+See [docs/publishing.md](docs/publishing.md) — npm login, the pre-publish check,
+version semantics, and CI tokens.
+
 ## Tests
 
 ```sh
