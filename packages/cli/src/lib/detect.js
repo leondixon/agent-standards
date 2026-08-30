@@ -26,10 +26,15 @@ function packageJsonPaths(root) {
   return paths
 }
 
-export function detectLanguage(root) {
-  if (existsSync(join(root, 'Cargo.toml'))) return 'rust'
-  if (existsSync(join(root, 'package.json'))) return 'typescript'
-  return undefined
+const LANGUAGE_MARKERS = {
+  rust: 'Cargo.toml',
+  typescript: 'package.json',
+}
+
+export function detectLanguages(root) {
+  return Object.entries(LANGUAGE_MARKERS)
+    .filter(([, marker]) => existsSync(join(root, marker)))
+    .map(([language]) => language)
 }
 
 export function detectDependencies(root) {

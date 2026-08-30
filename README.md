@@ -11,7 +11,7 @@ node packages/cli/src/index.js init ~/code/my-project
 
 | Command | Does |
 |---|---|
-| `init [dir]` | Detect language and stack, infer a layer map, install everything |
+| `init [dir]` | Detect languages and stack, infer a layer map, install everything |
 | `sync [dir]` | Add missing rules, update stale ones, prompt on local edits |
 | `check [dir]` | Report drift without writing; exits 1 when out of date (CI) |
 | `list` | Show every rule in the source |
@@ -41,28 +41,40 @@ monorepo. A project with no `backend` layer never installs backend rules.
 
 ## Languages
 
-A project has exactly one language, detected at `init` and stored in
-`.standards/config.json`:
+`init` detects every language present and stores them in `.standards/config.json`.
+A project can have more than one.
 
 | Marker file | Language |
 |---|---|
 | `Cargo.toml` | `rust` |
 | `package.json` | `typescript` |
 
-Rules are then selected in three passes — language, then preset, then layer:
+Rules are selected in three passes — language, then preset, then layer:
 
 ```
-standards/core/**          always installed, whatever the language
-standards/<language>/**    only the detected language's tree
+standards/core/**          always installed, whatever the languages
+standards/<language>/**    every detected language's tree
 ```
 
-So a Rust project installs `standards/core/` plus `standards/rust/`, and never
-sees a TypeScript rule. Change the `language` field in `.standards/config.json` to
-override the detection.
+A Rust project installs `standards/core/` plus `standards/rust/`. A repo with both
+`Cargo.toml` and `package.json` installs `core`, `rust` **and** `typescript` — each
+tree keeps its own rules, and layer globs are the union, so TypeScript rules match
+`.ts` files and Rust rules match `.rs` files.
 
-> A repo containing both `Cargo.toml` and `package.json` resolves to `rust` and
-> installs nothing from the TypeScript tree. Run the CLI against each package
-> directory separately, or set `language` by hand.
+In a polyglot project the shared principles carry both idioms:
+
+```markdown
+# Prefer get over find for queries
+
+## In Rust
+Applies to functions and module filenames (`get_searches.rs`, …)
+
+## In TypeScript
+Applies to functions and module filenames (`get-searches.ts`, …)
+```
+
+Single-language projects skip those headings. Edit the `languages` array in
+`.standards/config.json` to override the detection.
 
 ### Current coverage
 
@@ -72,7 +84,8 @@ override the detection.
 | Rust | 8 | none yet — `standards/rust/` is scaffolding |
 
 A Rust project today gets the 8 cross-language principles with Rust examples, and
-nothing more. Rust-specific rules (an `unwrap`/`expect` policy, error handling)
+nothing more. A Rust + TypeScript repo gets those principles in both idioms, plus
+the full TypeScript tree. Rust-specific rules (an `unwrap`/`expect` policy, error handling)
 have no TypeScript analogue and are not written yet.
 
 ### Cross-language principles
@@ -88,7 +101,7 @@ standards/core/prefer-get-over-find/
    └─ rust.md              get_accounts, get_accounts.rs
 ```
 
-Sync appends the expression matching the project's language, so the same principle
+Sync appends the expression for each of the project's languages, so the principle
 reads in the idiom of the language it lands in. Editing `rule.md` updates every
 language at once; a missing expression file falls back to the principle alone.
 
@@ -98,7 +111,7 @@ language at once; a missing expression file falls back to the principle alone.
 2. Add `standards/<language>/presets.json` with at least `{"base": {"always": true}}`
 3. Add a `languages/<language>.md` expression to each rule in `standards/core/`
 4. Extend `LANGUAGE_LAYERS` in `packages/cli/src/lib/layers.js` with its layer globs
-5. Extend `detectLanguage` in `packages/cli/src/lib/detect.js` with its marker file
+5. Extend `LANGUAGE_MARKERS` in `packages/cli/src/lib/detect.js` with its marker file
 
 Only step 1 and 2 are required to make the language selectable; the rest improve
 what it installs.
@@ -118,6 +131,9 @@ opted into early:
 
 `prisma` · `hono` · `react` · `react-query` · `react-hook-form` · `tailwind` ·
 `testing` · `zod` · `next`
+
+Presets are scoped to a language, so `hono` only ever applies to TypeScript files.
+In a polyglot project each preset is labelled with the language that supplies it.
 
 ## Tests
 

@@ -53,7 +53,7 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   const counts = summarise(plan)
 
   line()
-  line(`  ${style.bold(config.language)} ${style.dim('·')} ${config.presets.join(', ')}`)
+  line(`  ${style.bold(config.languages.join(' + '))} ${style.dim('·')} ${config.presets.join(', ')}`)
   line()
 
   for (const entry of plan) {

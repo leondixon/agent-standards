@@ -15,8 +15,18 @@ const LANGUAGE_LAYERS = {
   },
 }
 
-export function defaultLayerMap(language) {
-  return LANGUAGE_LAYERS[language] ?? { any: ['**/*'] }
+export function defaultLayerMap(languages) {
+  const list = Array.isArray(languages) ? languages : [languages]
+  const known = list.map(language => LANGUAGE_LAYERS[language]).filter(Boolean)
+
+  if (known.length === 0) return { any: ['**/*'] }
+  if (known.length === 1) return known[0]
+
+  const merged = {}
+  for (const layer of new Set(known.flatMap(map => Object.keys(map)))) {
+    merged[layer] = [...new Set(known.flatMap(map => map[layer] ?? []))]
+  }
+  return merged
 }
 
 export function resolveGlobs(rule, layerMap) {

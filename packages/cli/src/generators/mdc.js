@@ -1,20 +1,42 @@
 import { resolveGlobs } from '../lib/layers.js'
 
+const LANGUAGE_TITLES = {
+  typescript: 'TypeScript',
+  rust: 'Rust',
+}
+
 function summary(body) {
   const paragraph = body.split('\n\n').find(block => !block.startsWith('#'))
   return (paragraph ?? '').replace(/\n/g, ' ').trim()
 }
 
-function bodyFor(rule, language) {
-  const expression = rule.expressions?.[language]
-  if (!expression) return rule.body
-  return `${rule.body}\n\n${expression.body}`
+function languageTitle(language) {
+  return LANGUAGE_TITLES[language] ?? language
 }
 
-export function generateMdc(rule, layerMap, language) {
+function bodyFor(rule, languages) {
+  const expressions = languages
+    .map(language => ({ language, expression: rule.expressions?.[language] }))
+    .filter(entry => entry.expression)
+
+  if (expressions.length === 0) return rule.body
+
+  // A single-language project reads better without a redundant language heading.
+  if (expressions.length === 1) {
+    return `${rule.body}\n\n${expressions[0].expression.body}`
+  }
+
+  const sections = expressions.map(({ language, expression }) =>
+    `## In ${languageTitle(language)}\n\n${expression.body}`)
+
+  return `${rule.body}\n\n${sections.join('\n\n')}`
+}
+
+export function generateMdc(rule, layerMap, languages = []) {
+  const list = Array.isArray(languages) ? languages : [languages]
   const globs = resolveGlobs(rule, layerMap)
   const alwaysApply = rule.layer === 'any' && !globs
-  const body = bodyFor(rule, language)
+  const body = bodyFor(rule, list)
 
   const frontmatter = [
     '---',

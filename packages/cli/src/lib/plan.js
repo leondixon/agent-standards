@@ -6,8 +6,9 @@ import { generateAgentsMd, generateClaudeHooks, generateCursorHooks, generateEsl
 
 export function selectRules(rules, config) {
   const presets = new Set(config.presets)
+  const languages = new Set(config.languages)
   return rules
-    .filter(rule => rule.language === 'core' || rule.language === config.language)
+    .filter(rule => rule.language === 'core' || languages.has(rule.language))
     .filter(rule => rule.presets.some(preset => presets.has(preset)))
     .filter(rule => appliesTo(rule, config.layers))
 }
@@ -31,7 +32,7 @@ export function buildArtefacts(rules, config) {
     if (rule.outputs.includes('mdc')) {
       artefacts.push({
         path: join('.cursor', 'rules', `${rule.id}.mdc`),
-        content: generateMdc(rule, config.layers, config.language),
+        content: generateMdc(rule, config.layers, config.languages),
         rule: rule.id,
       })
     }

@@ -17,7 +17,15 @@ export function lockPath(root) {
 export function readConfig(root) {
   const path = configPath(root)
   if (!existsSync(path)) return undefined
-  return JSON.parse(readFileSync(path, 'utf8'))
+
+  const config = JSON.parse(readFileSync(path, 'utf8'))
+
+  // Configs written before multi-language support carried a single `language`.
+  if (!config.languages && config.language) {
+    return { ...config, languages: [config.language] }
+  }
+
+  return config
 }
 
 export function writeConfig(root, config) {

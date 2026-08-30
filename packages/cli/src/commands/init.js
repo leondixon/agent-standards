@@ -1,26 +1,42 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { detectLanguage, detectPresets, isWorkspace } from '../lib/detect.js'
+import { detectLanguages, detectPresets, isWorkspace } from '../lib/detect.js'
 import { defaultLayerMap } from '../lib/layers.js'
 import { readConfig, writeConfig } from '../lib/config.js'
 import { confirm } from '../lib/prompt.js'
 import { syncCommand } from './sync.js'
 import { line, style } from '../lib/ui.js'
 
-function loadPresets(sourceRoot, language) {
-  const path = join(sourceRoot, 'standards', language, 'presets.json')
-  if (!existsSync(path)) return {}
-  return JSON.parse(readFileSync(path, 'utf8'))
+function loadPresets(sourceRoot, languages) {
+  const merged = {}
+
+  for (const language of languages) {
+    const path = join(sourceRoot, 'standards', language, 'presets.json')
+    if (!existsSync(path)) continue
+
+    for (const [name, config] of Object.entries(JSON.parse(readFileSync(path, 'utf8')))) {
+      const existing = merged[name]
+      merged[name] = existing
+        ? {
+            ...existing,
+            languages: [...existing.languages, language],
+            dependencies: [...new Set([...(existing.dependencies ?? []), ...(config.dependencies ?? [])])],
+          }
+        : { ...config, languages: [language] }
+    }
+  }
+
+  return merged
 }
 
-function inferLayers(targetRoot, language) {
-  const layers = defaultLayerMap(language)
-  if (language !== 'typescript' || !isWorkspace(targetRoot)) return layers
+function inferLayers(targetRoot, languages) {
+  const layers = defaultLayerMap(languages)
+  if (!languages.includes('typescript') || !isWorkspace(targetRoot)) return layers
 
   return {
     ...layers,
-    backend: ['{apps,packages}/*/src/**/*.{ts,tsx}'],
-    frontend: ['{apps,packages}/*/{app,src,components}/**/*.{ts,tsx}'],
+    backend: [...new Set([...layers.backend, '{apps,packages}/*/src/**/*.{ts,tsx}'])],
+    frontend: [...new Set([...layers.frontend, '{apps,packages}/*/{app,src,components}/**/*.{ts,tsx}'])],
   }
 }
 
@@ -31,21 +47,22 @@ export async function initCommand(sourceRoot, targetRoot) {
     return syncCommand(sourceRoot, targetRoot, { write: true })
   }
 
-  const language = detectLanguage(targetRoot)
-  if (!language) {
+  const languages = detectLanguages(targetRoot)
+  if (languages.length === 0) {
     line(style.red('  Could not detect a language (no package.json or Cargo.toml).'))
     return 1
   }
 
-  const presets = loadPresets(sourceRoot, language)
+  const presets = loadPresets(sourceRoot, languages)
   const { detected, available, uncovered } = detectPresets(targetRoot, presets)
 
   line()
-  line(`  ${style.bold(language)}${isWorkspace(targetRoot) ? style.dim(' · workspace') : ''}`)
+  line(`  ${style.bold(languages.join(' + '))}${isWorkspace(targetRoot) ? style.dim(' · workspace') : ''}`)
   line()
   line('  detected')
   for (const preset of detected) {
-    line(`    ${style.green('✓')} ${preset.name.padEnd(18)} ${style.dim(preset.reason)}`)
+    const from = languages.length > 1 ? style.dim(` [${preset.languages.join(', ')}]`) : ''
+    line(`    ${style.green('✓')} ${preset.name.padEnd(18)} ${style.dim(preset.reason)}${from}`)
   }
 
   if (available.length > 0) {
@@ -62,7 +79,7 @@ export async function initCommand(sourceRoot, targetRoot) {
     for (const name of uncovered.slice(0, 8)) line(`    ${style.dim(`· ${name}`)}`)
   }
 
-  const layers = inferLayers(targetRoot, language)
+  const layers = inferLayers(targetRoot, languages)
 
   line()
   line('  layers')
@@ -78,7 +95,7 @@ export async function initCommand(sourceRoot, targetRoot) {
   }
 
   writeConfig(targetRoot, {
-    language,
+    languages,
     presets: detected.map(preset => preset.name),
     layers,
     modules: [],
