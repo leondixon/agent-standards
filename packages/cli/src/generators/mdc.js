@@ -5,17 +5,24 @@ function summary(body) {
   return (paragraph ?? '').replace(/\n/g, ' ').trim()
 }
 
-export function generateMdc(rule, layerMap) {
+function bodyFor(rule, language) {
+  const expression = rule.expressions?.[language]
+  if (!expression) return rule.body
+  return `${rule.body}\n\n${expression.body}`
+}
+
+export function generateMdc(rule, layerMap, language) {
   const globs = resolveGlobs(rule, layerMap)
   const alwaysApply = rule.layer === 'any' && !globs
+  const body = bodyFor(rule, language)
 
   const frontmatter = [
     '---',
-    `description: ${summary(rule.body).slice(0, 160)}`,
+    `description: ${summary(body).slice(0, 160)}`,
     globs ? `globs: ${globs.join(',')}` : undefined,
     `alwaysApply: ${alwaysApply}`,
     '---',
   ].filter(Boolean)
 
-  return `${frontmatter.join('\n')}\n\n# ${rule.title}\n\n${rule.body}\n`
+  return `${frontmatter.join('\n')}\n\n# ${rule.title}\n\n${body}\n`
 }

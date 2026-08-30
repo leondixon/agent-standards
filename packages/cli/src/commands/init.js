@@ -15,7 +15,7 @@ function loadPresets(sourceRoot, language) {
 
 function inferLayers(targetRoot, language) {
   const layers = defaultLayerMap(language)
-  if (!isWorkspace(targetRoot)) return layers
+  if (language !== 'typescript' || !isWorkspace(targetRoot)) return layers
 
   return {
     ...layers,
@@ -67,6 +67,7 @@ export async function initCommand(sourceRoot, targetRoot) {
   line()
   line('  layers')
   for (const [layer, globs] of Object.entries(layers)) {
+    if (globs.length === 0) continue
     line(`    ${layer.padEnd(10)} ${style.dim(globs.join(', '))}`)
   }
   line()

@@ -31,7 +31,7 @@ export function buildArtefacts(rules, config) {
     if (rule.outputs.includes('mdc')) {
       artefacts.push({
         path: join('.cursor', 'rules', `${rule.id}.mdc`),
-        content: generateMdc(rule, config.layers),
+        content: generateMdc(rule, config.layers, config.language),
         rule: rule.id,
       })
     }
@@ -52,11 +52,13 @@ export function buildArtefacts(rules, config) {
       : undefined,
   }))
 
-  artefacts.push({
-    path: join('.standards', 'eslint.config.js'),
-    content: generateEslintConfig(withOptions, config.layers),
-    rule: '(eslint config)',
-  })
+  if (withOptions.some(rule => rule.outputs.includes('eslint'))) {
+    artefacts.push({
+      path: join('.standards', 'eslint.config.js'),
+      content: generateEslintConfig(withOptions, config.layers),
+      rule: '(eslint config)',
+    })
+  }
 
   artefacts.push({
     path: join('.standards', 'AGENTS.md'),

@@ -1,0 +1,3 @@
+{
+  "base": { "always": true, "description": "Framework-agnostic Rust standards" }
+}
