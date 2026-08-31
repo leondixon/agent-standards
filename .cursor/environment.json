@@ -1,0 +1,4 @@
+{
+  "install": "npm ci",
+  "start": "if [ -n \"$NPM_TOKEN\" ]; then npm config set //registry.npmjs.org/:_authToken \"$NPM_TOKEN\"; fi"
+}
