@@ -55,13 +55,31 @@ function indentOf(line) {
   return line.length - line.trimStart().length
 }
 
+function withoutComment(line) {
+  let quote
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index]
+    if (quote) {
+      if (char === quote) quote = undefined
+      continue
+    }
+    if (char === "'" || char === '"') quote = char
+    else if (char === '#' && (index === 0 || /\s/.test(line[index - 1]))) return line.slice(0, index).trimEnd()
+  }
+  return line
+}
+
+function isBlank(line) {
+  return line.trim() === ''
+}
+
 function parseBlock(lines, start, indent) {
   const map = {}
   let index = start
 
   while (index < lines.length) {
     const line = lines[index]
-    if (line.trim() === '' || line.trimStart().startsWith('#')) {
+    if (isBlank(line)) {
       index += 1
       continue
     }
@@ -94,7 +112,14 @@ function parseBlock(lines, start, indent) {
       continue
     }
 
-    const nested = parseBlock(lines, index + 1, indent + 1)
+    const child = lines.slice(index + 1).find(candidate => !isBlank(candidate))
+    if (!child || indentOf(child) <= indentOf(line)) {
+      map[key] = {}
+      index += 1
+      continue
+    }
+
+    const nested = parseBlock(lines, index + 1, indentOf(child))
     map[key] = nested.map
     index = nested.index
   }
@@ -107,6 +132,6 @@ export function parseFrontmatter(source) {
   if (!match) {
     return { data: {}, body: source.trim() }
   }
-  const { map } = parseBlock(match[1].split('\n'), 0, 0)
+  const { map } = parseBlock(match[1].split('\n').map(withoutComment), 0, 0)
   return { data: map, body: source.slice(match[0].length).trim() }
 }
