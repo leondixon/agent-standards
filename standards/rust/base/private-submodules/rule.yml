@@ -1,0 +1,11 @@
+id: private-submodules
+language: rust
+severity: error
+message: Keep submodules private and expose their surface with `pub use`; only src/lib.rs declares `pub mod`.
+rule:
+  kind: mod_item
+  has:
+    kind: visibility_modifier
+    regex: '^pub$'
+ignores:
+  - '**/src/lib.rs'

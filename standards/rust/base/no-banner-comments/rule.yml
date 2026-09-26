@@ -1,0 +1,10 @@
+id: no-banner-comments
+language: rust
+severity: error
+message: Decorative banner comment — names and modules should carry the structure, not `// ====`.
+rule:
+  any:
+    - kind: line_comment
+      regex: '^//\s*[-=*#/]{4,}'
+    - kind: block_comment
+      regex: '^/\*\s*[-=*#/]{4,}'
