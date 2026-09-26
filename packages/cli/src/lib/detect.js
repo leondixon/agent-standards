@@ -37,8 +37,58 @@ export function detectLanguages(root) {
     .map(([language]) => language)
 }
 
+const DEPENDENCY_TABLES = ['dependencies', 'dev-dependencies', 'workspace.dependencies']
+const SECTION = /^\s*\[\s*([^\[\]]+?)\s*\]/
+const ENTRY = /^\s*([\w-]+)\s*=\s*(.*)$/
+const VERSION = /\bversion\s*=\s*"([^"]*)"/
+
+function versionOf(value) {
+  const plain = value.match(/^"([^"]*)"/)
+  if (plain) return plain[1]
+  return value.match(VERSION)?.[1] ?? '*'
+}
+
+/**
+ * Dependency names and versions from a Cargo manifest, read line by line. Covers
+ * `name = "1"`, `name = { version = "1" }` and `[dependencies.name]` tables.
+ */
+export function cargoDependencies(manifest) {
+  const found = new Map()
+  let section
+
+  for (const line of manifest.split('\n')) {
+    const header = line.match(SECTION)
+    if (header) {
+      section = header[1]
+      const table = DEPENDENCY_TABLES.find(name => section.startsWith(`${name}.`))
+      if (table) found.set(section.slice(table.length + 1), '*')
+      continue
+    }
+
+    const entry = line.match(ENTRY)
+    if (!entry) continue
+
+    if (DEPENDENCY_TABLES.includes(section)) {
+      found.set(entry[1], versionOf(entry[2]))
+      continue
+    }
+
+    const table = DEPENDENCY_TABLES.find(name => section?.startsWith(`${name}.`))
+    if (table && entry[1] === 'version') found.set(section.slice(table.length + 1), versionOf(entry[2]))
+  }
+
+  return found
+}
+
 export function detectDependencies(root) {
   const found = new Map()
+
+  const cargoManifest = join(root, 'Cargo.toml')
+  if (existsSync(cargoManifest)) {
+    for (const [name, version] of cargoDependencies(readFileSync(cargoManifest, 'utf8'))) {
+      found.set(name, version)
+    }
+  }
 
   for (const path of packageJsonPaths(root)) {
     const manifest = readJson(path)
