@@ -4,7 +4,9 @@ import { parseFrontmatter } from './frontmatter.js'
 
 const LAYERS = new Set(['any', 'backend', 'frontend', 'schema', 'test'])
 const SEVERITIES = new Set(['error', 'warn'])
-const OUTPUTS = new Set(['mdc', 'agents-md', 'eslint', 'oxlint', 'hook'])
+const OUTPUTS = new Set(['mdc', 'agents-md', 'eslint', 'oxlint', 'hook', 'cargo-lints', 'clippy-config', 'ast-grep'])
+const LINT_TOOLS = new Set(['rust', 'clippy', 'bevy'])
+const LINT_LEVELS = new Set(['allow', 'expect', 'warn', 'deny', 'forbid'])
 const REQUIRED = ['id', 'title', 'layer', 'presets', 'severity', 'outputs']
 
 function directoriesIn(path) {
@@ -12,6 +14,40 @@ function directoriesIn(path) {
   return readdirSync(path)
     .filter(entry => !entry.startsWith('.'))
     .filter(entry => statSync(join(path, entry)).isDirectory())
+}
+
+function isMap(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function lintProblems(lints) {
+  if (!isMap(lints)) return ['`lints:` must be a map of `rust`, `clippy` or `bevy` to lint levels']
+
+  const problems = []
+  for (const [tool, entries] of Object.entries(lints)) {
+    if (!LINT_TOOLS.has(tool)) {
+      problems.push(`unknown lint tool \`${tool}\` (expected rust, clippy or bevy)`)
+      continue
+    }
+    if (!isMap(entries)) {
+      problems.push(`\`lints.${tool}\` must be a map of lint names to levels`)
+      continue
+    }
+    for (const [name, setting] of Object.entries(entries)) {
+      const level = isMap(setting) ? setting.level : setting
+      if (!LINT_LEVELS.has(level)) {
+        problems.push(`\`lints.${tool}.${name}\` has unknown level \`${level}\``)
+      }
+      // bevy_lint reads its table from package metadata, which has no priority field.
+      if (tool === 'bevy' && isMap(setting) && Object.keys(setting).some(key => key !== 'level')) {
+        problems.push(`\`lints.bevy.${name}\` only supports \`level\``)
+      }
+      if (isMap(setting) && setting.priority !== undefined && !Number.isInteger(setting.priority)) {
+        problems.push(`\`lints.${tool}.${name}.priority\` must be an integer`)
+      }
+    }
+  }
+  return problems
 }
 
 function validate(rule) {
@@ -47,6 +83,16 @@ function validate(rule) {
   if (rule.outputs?.includes('hook') && !rule.hookPath) {
     problems.push('declares the `hook` output but has no `hook.sh`')
   }
+  if (rule.outputs?.includes('cargo-lints')) {
+    if (rule.lints === undefined) problems.push('declares the `cargo-lints` output but has no `lints:` block')
+    else problems.push(...lintProblems(rule.lints))
+  }
+  if (rule.outputs?.includes('clippy-config') && !isMap(rule.clippy)) {
+    problems.push('declares the `clippy-config` output but has no `clippy:` block')
+  }
+  if (rule.outputs?.includes('ast-grep') && !rule.astGrepPath) {
+    problems.push('declares the `ast-grep` output but has no `rule.yml`')
+  }
 
   return problems
 }
@@ -58,6 +104,7 @@ function loadRule(path, { language, preset }) {
   const { data, body } = parseFrontmatter(readFileSync(rulePath, 'utf8'))
   const implementationPath = join(path, 'rule.js')
   const hookPath = join(path, 'hook.sh')
+  const astGrepPath = join(path, 'rule.yml')
 
   const rule = {
     ...data,
@@ -68,6 +115,7 @@ function loadRule(path, { language, preset }) {
     preset,
     implementationPath: existsSync(implementationPath) ? implementationPath : undefined,
     hookPath: existsSync(hookPath) ? hookPath : undefined,
+    astGrepPath: existsSync(astGrepPath) ? astGrepPath : undefined,
   }
 
   rule.problems = validate(rule)
@@ -124,6 +172,9 @@ export function authoringProblems(rules) {
       const problems = []
       if (rule.eslint?.own && !existsSync(join(rule.path, '__fixtures__'))) {
         problems.push('own ESLint implementation requires `__fixtures__/`')
+      }
+      if (rule.astGrepPath && !existsSync(join(rule.path, '__fixtures__'))) {
+        problems.push('ast-grep `rule.yml` requires `__fixtures__/`')
       }
       return { ...rule, problems }
     })

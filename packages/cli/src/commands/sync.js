@@ -1,8 +1,9 @@
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { buildArtefacts, planSync, summarise } from '../lib/plan.js'
 import { CONFIG_DIR, hash, lockEntry, readBase, readConfig, readLock, writeBase, writeLock } from '../lib/config.js'
 import { buildConflict, clearConflicts, writeConflicts } from '../lib/conflicts.js'
+import { replaceRegion, regionKey } from '../lib/region.js'
 import { loadStandards, invalidRules } from '../lib/rules.js'
 import { STATE_MARK, line, style } from '../lib/ui.js'
 
@@ -24,11 +25,21 @@ function unifiedDiff(current, next) {
   return output.slice(0, 24).join('\n')
 }
 
-function writeArtefact(root, artefact) {
+export function writeArtefact(root, artefact) {
   const absolute = join(root, artefact.path)
   mkdirSync(dirname(absolute), { recursive: true })
-  writeFileSync(absolute, artefact.content)
+
+  const content = artefact.region
+    ? replaceRegion(readFileSync(absolute, 'utf8'), artefact.content, artefact.path)
+    : artefact.content
+
+  writeFileSync(absolute, content)
   if (artefact.executable) chmodSync(absolute, 0o755)
+}
+
+function readManifest(root) {
+  const path = join(root, 'Cargo.toml')
+  return existsSync(path) ? readFileSync(path, 'utf8') : undefined
 }
 
 export async function syncCommand(sourceRoot, targetRoot, { write }) {
@@ -48,7 +59,7 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   }
 
   const lock = readLock(targetRoot)
-  const artefacts = buildArtefacts(rules, { ...config, sourcePath: sourceRoot })
+  const artefacts = buildArtefacts(rules, { ...config, sourcePath: sourceRoot, cargoManifest: readManifest(targetRoot) })
   const plan = planSync(targetRoot, artefacts, lock)
   const counts = summarise(plan)
 
@@ -82,15 +93,16 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
 
   for (const entry of plan) {
     if (WRITE_STATES.has(entry.state)) {
+      const key = regionKey(entry.path, entry.region)
       writeArtefact(targetRoot, entry)
-      writeBase(targetRoot, entry.path, entry.content)
-      lock.files[entry.path] = lockEntry(hash(entry.content), hash(entry.content))
+      writeBase(targetRoot, key, entry.content)
+      lock.files[key] = lockEntry(hash(entry.content), hash(entry.content))
       continue
     }
 
     if (entry.state !== 'drifted' && entry.state !== 'untracked') continue
 
-    conflicts.push(buildConflict(targetRoot, entry, readBase(targetRoot, entry.path)))
+    conflicts.push(buildConflict(targetRoot, entry, readBase(targetRoot, regionKey(entry.path, entry.region))))
   }
 
   writeLock(targetRoot, lock)

@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { CONFIG_DIR } from './config.js'
+import { CONFIG_DIR, readTracked } from './config.js'
 
 const CONFLICTS_FILE = 'conflicts.json'
 
@@ -40,8 +40,9 @@ export function buildConflict(root, entry, baseText) {
   return {
     rule: entry.rule,
     path: entry.path,
+    ...(entry.region ? { region: entry.region } : {}),
     state: entry.state,
-    mine: readFileSync(join(root, entry.path), 'utf8'),
+    mine: readTracked(root, entry.path, entry.region),
     theirs: entry.content,
     base: baseText,
   }

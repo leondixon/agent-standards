@@ -27,9 +27,15 @@ Each entry has four fields:
 |---|---|
 | `rule` | Rule id, e.g. `no-null` |
 | `path` | File to write, e.g. `.cursor/rules/no-null.mdc` |
+| `region` | Present only for a managed block, e.g. `standards` in `Cargo.toml` |
 | `mine` | The project's current file |
 | `theirs` | The new upstream rule |
 | `base` | The upstream text `mine` was last reconciled against |
+
+When `region` is set, `mine`, `theirs` and `base` are only the block between
+`` # >>> standards (managed by `standards sync`) `` and `# <<< standards`. Merge
+that block and write it back between the same markers; leave the rest of the
+file alone, and keep both marker lines.
 
 `base` makes this a real three-way merge. Diff `base → mine` to see what the
 project changed, and `base → theirs` to see what upstream changed. When `base` is

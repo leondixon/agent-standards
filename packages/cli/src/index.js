@@ -5,6 +5,7 @@ import { initCommand } from './commands/init.js'
 import { listCommand } from './commands/list.js'
 import { resolveCommand } from './commands/resolve.js'
 import { syncCommand } from './commands/sync.js'
+import { ConfigurationError } from './lib/errors.js'
 import { findSourceRoot } from './lib/source-root.js'
 import { line, style } from './lib/ui.js'
 
@@ -25,25 +26,32 @@ function usage() {
 const [command = 'help', target] = process.argv.slice(2)
 const targetRoot = resolve(target ?? process.cwd())
 
-switch (command) {
-  case 'list':
-    listCommand(SOURCE_ROOT)
-    break
-  case 'build':
-    process.exitCode = buildCommand(SOURCE_ROOT)
-    break
-  case 'init':
-    process.exitCode = await initCommand(SOURCE_ROOT, targetRoot)
-    break
-  case 'sync':
-    process.exitCode = await syncCommand(SOURCE_ROOT, targetRoot, { write: true })
-    break
-  case 'check':
-    process.exitCode = await syncCommand(SOURCE_ROOT, targetRoot, { write: false })
-    break
-  case 'resolve':
-    process.exitCode = resolveCommand(process.cwd(), process.argv.slice(3))
-    break
-  default:
-    usage()
+try {
+  switch (command) {
+    case 'list':
+      listCommand(SOURCE_ROOT)
+      break
+    case 'build':
+      process.exitCode = buildCommand(SOURCE_ROOT)
+      break
+    case 'init':
+      process.exitCode = await initCommand(SOURCE_ROOT, targetRoot)
+      break
+    case 'sync':
+      process.exitCode = await syncCommand(SOURCE_ROOT, targetRoot, { write: true })
+      break
+    case 'check':
+      process.exitCode = await syncCommand(SOURCE_ROOT, targetRoot, { write: false })
+      break
+    case 'resolve':
+      process.exitCode = resolveCommand(process.cwd(), process.argv.slice(3))
+      break
+    default:
+      usage()
+  }
+}
+catch (error) {
+  if (!(error instanceof ConfigurationError)) throw error
+  line(style.red(`  ${error.message}`))
+  process.exitCode = 1
 }

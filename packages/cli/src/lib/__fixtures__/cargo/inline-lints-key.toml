@@ -1,0 +1,5 @@
+[package]
+name = "game"
+
+[lints]
+clippy = { unwrap_used = "warn" }

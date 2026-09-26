@@ -1,0 +1,6 @@
+id: no-todo-macro
+language: rust
+severity: error
+message: Finish the code instead of leaving todo!()
+rule:
+  pattern: todo!($$$)

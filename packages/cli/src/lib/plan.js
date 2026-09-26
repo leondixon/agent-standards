@@ -1,8 +1,19 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileState } from './config.js'
+import { ConfigurationError } from './errors.js'
 import { appliesTo } from './layers.js'
-import { generateAgentsMd, generateClaudeHooks, generateCursorHooks, generateEslintConfig, generateMdc, generateOxlintConfig } from '../generators/index.js'
+import { STANDARDS_REGION } from './region.js'
+import {
+  generateAgentsMd,
+  generateCargoLints,
+  generateClaudeHooks,
+  generateClippyConfig,
+  generateCursorHooks,
+  generateEslintConfig,
+  generateMdc,
+  generateOxlintConfig,
+} from '../generators/index.js'
 
 export function selectRules(rules, config) {
   const presets = new Set(config.presets)
@@ -87,24 +98,101 @@ export function buildArtefacts(rules, config) {
     rule: '(conflict skill)',
   })
 
-  const hookRules = selected.filter(rule => rule.outputs.includes('hook') && rule.hookPath)
+  artefacts.push(...rustArtefacts(selected, config))
 
-  if (hookRules.length > 0) {
+  const hookRules = selected.filter(rule => rule.outputs.includes('hook') && rule.hookPath)
+  const astGrepRules = selected.filter(rule => rule.outputs.includes('ast-grep'))
+  const rustGate = selected.some(rule => rule.language === 'rust')
+
+  const edit = hookRules.map(rule => ({ command: `.standards/hooks/${rule.id}.sh`, title: rule.title }))
+  if (astGrepRules.length > 0) {
+    edit.push({ command: '.standards/hooks/ast-grep.sh', title: 'ast-grep standards' })
+  }
+  const stop = rustGate ? [{ command: '.standards/hooks/rust-gate.sh', title: 'Rust quality gate' }] : []
+
+  if (edit.length > 0) {
     artefacts.push({
       path: join('.standards', 'hook-lib', 'diff.sh'),
-      content: readFileSync(join(config.sourcePath, 'templates', 'hook-lib', 'diff.sh'), 'utf8'),
+      content: template(config, 'hook-lib', 'diff.sh'),
       rule: '(hook library)',
       executable: true,
     })
+  }
+
+  if (edit.length > 0 || stop.length > 0) {
     artefacts.push({
       path: join('.cursor', 'hooks.json'),
-      content: generateCursorHooks(hookRules),
+      content: generateCursorHooks({ edit, stop }),
       rule: '(cursor hooks)',
     })
     artefacts.push({
       path: join('.standards', 'claude-hooks.json'),
-      content: generateClaudeHooks(hookRules),
+      content: generateClaudeHooks({ edit, stop }),
       rule: '(claude hooks)',
+    })
+  }
+
+  return artefacts
+}
+
+function template(config, ...segments) {
+  return readFileSync(join(config.sourcePath, 'templates', ...segments), 'utf8')
+}
+
+function rustArtefacts(selected, config) {
+  const artefacts = []
+  const lintRules = selected.filter(rule => rule.outputs.includes('cargo-lints'))
+  const clippyRules = selected.filter(rule => rule.outputs.includes('clippy-config'))
+  const astGrepRules = selected.filter(rule => rule.outputs.includes('ast-grep'))
+
+  if (lintRules.length > 0) {
+    if (config.cargoManifest === undefined) {
+      throw new ConfigurationError('Rust lint rules are selected but the project has no Cargo.toml at its root.')
+    }
+    artefacts.push({
+      path: 'Cargo.toml',
+      region: STANDARDS_REGION,
+      content: generateCargoLints(lintRules, config.cargoManifest),
+      rule: '(cargo lints)',
+    })
+  }
+
+  if (clippyRules.length > 0) {
+    artefacts.push({
+      path: 'clippy.toml',
+      content: generateClippyConfig(clippyRules),
+      rule: '(clippy config)',
+    })
+  }
+
+  for (const rule of astGrepRules) {
+    artefacts.push({
+      path: join('.standards', 'ast-grep', 'rules', `${rule.id}.yml`),
+      content: readFileSync(rule.astGrepPath, 'utf8'),
+      rule: rule.id,
+    })
+  }
+
+  if (astGrepRules.length > 0) {
+    artefacts.push({
+      path: join('.standards', 'sgconfig.yml'),
+      content: 'ruleDirs:\n  - ast-grep/rules\n',
+      rule: '(ast-grep config)',
+    })
+    artefacts.push({
+      path: join('.standards', 'hooks', 'ast-grep.sh'),
+      content: template(config, 'hooks', 'ast-grep.sh'),
+      rule: '(ast-grep hook)',
+      executable: true,
+    })
+  }
+
+  if (selected.some(rule => rule.language === 'rust')) {
+    artefacts.push({
+      path: join('.standards', 'hooks', 'rust-gate.sh'),
+      content: template(config, 'hooks', 'rust-gate.sh').replace('__BEVY_LINT__', String(config.presets.includes('bevy'))),
+      rule: '(rust gate)',
+      executable: true,
     })
   }
 
@@ -114,7 +202,7 @@ export function buildArtefacts(rules, config) {
 export function planSync(root, artefacts, lock) {
   return artefacts.map(artefact => ({
     ...artefact,
-    state: fileState(root, artefact.path, lock, artefact.content),
+    state: fileState(root, artefact.path, lock, artefact.content, artefact.region),
   }))
 }
 

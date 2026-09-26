@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { extractRegion, regionKey } from './region.js'
 
 export const CONFIG_DIR = '.standards'
 const CONFIG_FILE = 'config.json'
@@ -78,13 +79,25 @@ function entryHashes(recorded) {
   return recorded
 }
 
-export function fileState(root, relativePath, lock, expected) {
+/**
+ * The text sync owns at a path: the whole file, or only the managed block when
+ * `region` is set. Undefined when the file or its block does not exist.
+ */
+export function readTracked(root, relativePath, region) {
   const absolute = join(root, relativePath)
-  const recorded = entryHashes(lock.files[relativePath])
+  if (!existsSync(absolute)) return undefined
 
-  if (!existsSync(absolute)) return recorded ? 'deleted' : 'missing'
+  const text = readFileSync(absolute, 'utf8')
+  return region ? extractRegion(text, relativePath) : text
+}
 
-  const actual = hash(readFileSync(absolute, 'utf8'))
+export function fileState(root, relativePath, lock, expected, region) {
+  const recorded = entryHashes(lock.files[regionKey(relativePath, region)])
+  const tracked = readTracked(root, relativePath, region)
+
+  if (tracked === undefined) return recorded ? 'deleted' : 'missing'
+
+  const actual = hash(tracked)
   const source = hash(expected)
 
   if (actual === source) return 'current'
