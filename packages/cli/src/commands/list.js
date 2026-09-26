@@ -17,6 +17,8 @@ export function listCommand(sourceRoot) {
     for (const rule of groups.get(key).sort((a, b) => a.id.localeCompare(b.id))) {
       const marks = [
         rule.eslint || rule.oxlint ? 'lint' : undefined,
+        rule.lints ? 'cargo' : undefined,
+        rule.astGrepPath ? 'ast-grep' : undefined,
         rule.hookPath ? 'hook' : undefined,
         rule.expressions ? `${Object.keys(rule.expressions).length} languages` : undefined,
       ].filter(Boolean)
