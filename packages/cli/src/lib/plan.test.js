@@ -86,4 +86,17 @@ describe('buildArtefacts', () => {
       { languages: ['rust'], presets: ['base'], layers: { any: ['**/*.rs'] }, sourcePath: findSourceRoot() },
     )).toThrow('no Cargo.toml')
   })
+
+  it('given one id in two language trees, when planned, then each gets its own rule file', () => {
+    const rule = language => selected({ id: 'no-banner-comments', title: 'No banner comments', language, severity: 'error', body: 'x', outputs: ['mdc'] })
+    const artefacts = buildArtefacts(
+      [rule('typescript'), rule('rust')],
+      { languages: ['rust', 'typescript'], presets: ['base'], layers: { any: ['**/*'] }, sourcePath: findSourceRoot() },
+    )
+
+    expect(artefacts.map(entry => entry.path).filter(path => path.startsWith('.cursor/rules/'))).toEqual([
+      '.cursor/rules/no-banner-comments-typescript.mdc',
+      '.cursor/rules/no-banner-comments-rust.mdc',
+    ])
+  })
 })

@@ -35,14 +35,24 @@ function substituteOptions(options, config) {
   return resolved
 }
 
+/** Ids that more than one language tree defines, such as `no-banner-comments`. */
+function sharedIds(rules) {
+  const languages = new Map()
+  for (const rule of rules) {
+    languages.set(rule.id, new Set([...(languages.get(rule.id) ?? []), rule.language]))
+  }
+  return new Set([...languages].filter(([, set]) => set.size > 1).map(([id]) => id))
+}
+
 export function buildArtefacts(rules, config) {
   const selected = selectRules(rules, config)
   const artefacts = []
+  const shared = sharedIds(selected)
 
   for (const rule of selected) {
     if (rule.outputs.includes('mdc')) {
       artefacts.push({
-        path: join('.cursor', 'rules', `${rule.id}.mdc`),
+        path: join('.cursor', 'rules', shared.has(rule.id) ? `${rule.id}-${rule.language}.mdc` : `${rule.id}.mdc`),
         content: generateMdc(rule, config.layers, config.languages),
         rule: rule.id,
       })
