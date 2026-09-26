@@ -1,3 +1,4 @@
 {
-  "base": { "always": true, "description": "Framework-agnostic Rust standards" }
+  "base": { "always": true, "description": "Framework-agnostic Rust standards" },
+  "bevy": { "dependencies": ["bevy"], "description": "Bevy game engine" }
 }
