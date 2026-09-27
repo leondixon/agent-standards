@@ -2,7 +2,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, write
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { readLock, writeConfig } from './config.js'
+import { hash, lockEntry, readLock, writeBase, writeConfig, writeLock } from './config.js'
 import { findSourceRoot } from './source-root.js'
 import { syncCommand } from '../commands/sync.js'
 
@@ -41,6 +41,12 @@ function file(path) {
 function write(path, content) {
   mkdirSync(dirname(join(target, path)), { recursive: true })
   writeFileSync(join(target, path), content)
+}
+
+function tracked(path, content) {
+  write(path, content)
+  writeBase(target, path, content)
+  return lockEntry(hash(content), hash(content))
 }
 
 function sync() {
@@ -95,5 +101,37 @@ describe('Claude Code artefacts', () => {
 
     expect(file('CLAUDE.md')).toContain('## Coding Standards')
     expect(existsSync(join(target, 'AGENTS.md'))).toBe(false)
+  })
+
+  it('given Cursor files from an earlier sync, when synced, then untouched ones are removed and edited ones kept', async () => {
+    project()
+    writeLock(target, {
+      files: {
+        '.cursor/rules/prefer-get-over-find.mdc': tracked('.cursor/rules/prefer-get-over-find.mdc', 'rule'),
+        '.cursor/hooks.json': tracked('.cursor/hooks.json', '{}\n'),
+        '.standards/AGENTS.md': tracked('.standards/AGENTS.md', 'summary'),
+      },
+    })
+    write('.cursor/hooks.json', '{ "edited": true }\n')
+
+    expect(await sync()).toBe(0)
+
+    expect(existsSync(join(target, '.cursor/rules'))).toBe(false)
+    expect(existsSync(join(target, '.standards/AGENTS.md'))).toBe(false)
+    expect(file('.cursor/hooks.json')).toBe('{ "edited": true }\n')
+
+    const lock = readLock(target)
+    expect(Object.keys(lock.files).filter(path => path.startsWith('.cursor') || path === '.standards/AGENTS.md')).toEqual([])
+    expect(existsSync(join(target, '.standards/base/.cursor'))).toBe(false)
+  })
+
+  it('given a retired artefact, when checked, then it counts as out of date', async () => {
+    project()
+    await sync()
+    const lock = readLock(target)
+    lock.files['.cursor/hooks.json'] = tracked('.cursor/hooks.json', '{}\n')
+    writeLock(target, lock)
+
+    expect(await syncCommand(source, target, { write: false })).toBe(1)
   })
 })

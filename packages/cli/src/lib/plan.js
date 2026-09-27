@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileState } from './config.js'
+import { fileState, retiredState } from './config.js'
 import { ConfigurationError } from './errors.js'
 import { appliesTo } from './layers.js'
-import { STANDARDS_REGION, wrapRegion } from './region.js'
+import { STANDARDS_REGION, regionKey, wrapRegion } from './region.js'
 import {
   generateAgentsMd,
   generateCargoLints,
@@ -208,6 +208,22 @@ export function planSync(root, artefacts, lock) {
     ...artefact,
     state: fileState(root, artefact.path, lock, artefact.content, artefact.region),
   }))
+}
+
+/**
+ * Lock entries sync no longer generates, such as a retired rule or a file from
+ * an earlier layout. `retired` still holds what sync wrote and is safe to
+ * remove; `kept` was edited since, so it stays on disk; `gone` is deleted.
+ */
+export function planRetired(root, artefacts, lock) {
+  const current = new Set(artefacts.map(artefact => regionKey(artefact.path, artefact.region)))
+
+  return Object.keys(lock.files)
+    .filter(key => !current.has(key))
+    .map((key) => {
+      const [path, region] = key.split('#')
+      return { key, path, region, state: retiredState(root, path, region, lock.files[key]) }
+    })
 }
 
 export function summarise(plan) {

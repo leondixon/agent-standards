@@ -1,9 +1,9 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { buildArtefacts, planSync, summarise } from '../lib/plan.js'
-import { CONFIG_DIR, hash, lockEntry, readBase, readConfig, readLock, writeBase, writeLock } from '../lib/config.js'
+import { buildArtefacts, planRetired, planSync, summarise } from '../lib/plan.js'
+import { CONFIG_DIR, basePath, hash, lockEntry, readBase, readConfig, readLock, writeBase, writeLock } from '../lib/config.js'
 import { buildConflict, clearConflicts, writeConflicts } from '../lib/conflicts.js'
-import { replaceRegion, regionKey } from '../lib/region.js'
+import { removeRegion, replaceRegion, regionKey } from '../lib/region.js'
 import { loadStandards, invalidRules } from '../lib/rules.js'
 import { STATE_MARK, line, style } from '../lib/ui.js'
 
@@ -38,6 +38,36 @@ export function writeArtefact(root, artefact) {
   if (artefact.executable) chmodSync(absolute, 0o755)
 }
 
+function removeEmptyParents(root, relativePath) {
+  let directory = dirname(join(root, relativePath))
+  while (directory.startsWith(`${root}/`) && readdirSync(directory).length === 0) {
+    rmSync(directory, { recursive: true })
+    directory = dirname(directory)
+  }
+}
+
+function removeArtefact(root, entry) {
+  const absolute = join(root, entry.path)
+  const remaining = entry.region ? removeRegion(readFileSync(absolute, 'utf8'), entry.path) : ''
+
+  if (remaining === '') {
+    rmSync(absolute)
+    removeEmptyParents(root, entry.path)
+  }
+  else {
+    writeFileSync(absolute, remaining)
+  }
+}
+
+function forget(root, lock, entry) {
+  delete lock.files[entry.key]
+  const base = basePath(root, entry.key)
+  if (existsSync(base)) {
+    rmSync(base)
+    removeEmptyParents(root, join(CONFIG_DIR, 'base', entry.key))
+  }
+}
+
 /** Claude reads AGENTS.md only when the project has no CLAUDE.md of its own. */
 function instructionsFile(root) {
   return ['CLAUDE.md', join('.claude', 'CLAUDE.md')].find(path => existsSync(join(root, path))) ?? 'AGENTS.md'
@@ -46,6 +76,10 @@ function instructionsFile(root) {
 function readManifest(root) {
   const path = join(root, 'Cargo.toml')
   return existsSync(path) ? readFileSync(path, 'utf8') : undefined
+}
+
+function regionLabel(entry) {
+  return entry.region ? `${entry.path} (standards block)` : entry.path
 }
 
 export async function syncCommand(sourceRoot, targetRoot, { write }) {
@@ -72,7 +106,9 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
     instructionsFile: instructionsFile(targetRoot),
   })
   const plan = planSync(targetRoot, artefacts, lock)
+  const retired = planRetired(targetRoot, artefacts, lock)
   const counts = summarise(plan)
+  const removable = retired.filter(entry => entry.state !== 'gone')
 
   line()
   line(`  ${style.bold(config.languages.join(' + '))} ${style.dim('·')} ${config.presets.join(', ')}`)
@@ -82,8 +118,11 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
     if (entry.state === 'current') continue
     line(`  ${STATE_MARK[entry.state]} ${entry.path}`)
   }
+  for (const entry of retired) {
+    line(`  ${STATE_MARK[entry.state]} ${regionLabel(entry)}`)
+  }
 
-  const outstanding = counts.missing + counts.stale + counts.drifted + counts.untracked + counts.deleted
+  const outstanding = counts.missing + counts.stale + counts.drifted + counts.untracked + counts.deleted + retired.length
 
   if (outstanding === 0) {
     const pinnedNote = counts.pinned > 0 ? style.dim(` · ${counts.pinned} pinned`) : ''
@@ -95,7 +134,8 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   if (!write) {
     line()
     const pinnedNote = counts.pinned > 0 ? ` · ${counts.pinned} pinned` : ''
-    line(`  ${counts.missing} new · ${counts.stale} stale · ${counts.drifted + counts.untracked} drifted · ${counts.current} current${pinnedNote}`)
+    const retiredNote = removable.length > 0 ? ` · ${removable.length} retired` : ''
+    line(`  ${counts.missing} new · ${counts.stale} stale · ${counts.drifted + counts.untracked} drifted · ${counts.current} current${retiredNote}${pinnedNote}`)
     line()
     return 1
   }
@@ -116,16 +156,27 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
     conflicts.push(buildConflict(targetRoot, entry, readBase(targetRoot, regionKey(entry.path, entry.region))))
   }
 
+  for (const entry of retired) {
+    if (entry.state === 'retired') removeArtefact(targetRoot, entry)
+    forget(targetRoot, lock, entry)
+  }
+
   writeLock(targetRoot, lock)
   writeConflicts(targetRoot, conflicts)
 
   const written = counts.missing + counts.stale + counts.deleted
+  const removed = retired.filter(entry => entry.state === 'retired')
+  const kept = retired.filter(entry => entry.state === 'kept')
 
   line()
   if (written > 0) line(`  ${style.green('✓')} synced ${written} artefact(s)`)
+  if (removed.length > 0) line(`  ${style.green('✓')} removed ${removed.length} artefact(s) sync no longer generates`)
+  for (const entry of kept) {
+    line(`  ${style.yellow('?')} ${regionLabel(entry)} is no longer generated but was edited — left in place`)
+  }
 
   if (conflicts.length === 0) {
-    if (written === 0) line(`  ${style.green('✓')} nothing to do`)
+    if (written === 0 && retired.length === 0) line(`  ${style.green('✓')} nothing to do`)
     line()
     return 0
   }

@@ -117,6 +117,12 @@ export function fileState(root, relativePath, lock, expected, region) {
   return 'drifted'
 }
 
+export function retiredState(root, relativePath, region, recorded) {
+  const tracked = readTracked(root, relativePath, region)
+  if (tracked === undefined) return 'gone'
+  return hash(tracked) === entryHashes(recorded).local ? 'retired' : 'kept'
+}
+
 export function lockEntry(localHash, sourceHash) {
   return { local: localHash, source: sourceHash }
 }

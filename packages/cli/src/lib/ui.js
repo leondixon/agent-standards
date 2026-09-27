@@ -31,6 +31,9 @@ export const STATE_MARK = {
   untracked: style.yellow('?'),
   deleted: style.red('-'),
   pinned: style.dim('◆'),
+  retired: style.red('×'),
+  kept: style.yellow('?'),
+  gone: style.dim('-'),
 }
 
 export function line(text = '') {
