@@ -1,9 +1,9 @@
 # agent-standards
 
-Portable coding standards with one source of truth per rule. Prose, lint rules
-(ESLint and Oxlint for TypeScript; Cargo lint levels, Clippy and ast-grep for
-Rust), and agent hooks are all generated from the same directory, so they cannot
-drift apart.
+Portable coding standards for Claude Code, with one source of truth per rule.
+Prose, lint rules (ESLint and Oxlint for TypeScript; Cargo lint levels, Clippy
+and ast-grep for Rust), and Claude Code hooks are all generated from the same
+directory, so they cannot drift apart.
 
 ```sh
 npx @leondixon/agent-standards init
@@ -62,8 +62,21 @@ standards/typescript/base/no-type-assertions/
 └─ __fixtures__/      valid/ + invalid/
 ```
 
-From that, sync generates `.cursor/rules/*.mdc`, an `AGENTS.md` section, a flat
-ESLint config, an Oxlint config, and hook wiring for both Cursor and Claude Code.
+From that, sync generates what Claude Code reads natively, plus the lint configs:
+
+| Artefact | Where |
+|---|---|
+| One rule per standard, scoped with `paths:` so it loads only for matching files | `.claude/rules/<id>.md` |
+| A one-line-per-rule summary, in a managed block | `CLAUDE.md` if the project has one, otherwise `AGENTS.md` |
+| Hooks, as managed entries alongside your own settings | `.claude/settings.json` |
+| The conflict-merging skill | `.claude/skills/resolve-standards-conflicts/` |
+| Flat ESLint and Oxlint configs | `.standards/` |
+
+The summary goes to `CLAUDE.md` when one exists because Claude Code reads
+`AGENTS.md` only in a project without a `CLAUDE.md`. In `.claude/settings.json`,
+sync owns only the hooks that run a script from `.standards/hooks/`; permissions,
+env and your own hooks are left alone.
+
 For Rust it also writes a managed lint block in `Cargo.toml`, a `clippy.toml`,
 ast-grep rules, and a quality gate that runs when the agent stops — see
 [Rust](#rust).
@@ -97,7 +110,7 @@ A Rust project installs `standards/core/` plus `standards/rust/`. A repo with bo
 tree keeps its own rules, and layer globs are the union, so TypeScript rules match
 `.ts` files and Rust rules match `.rs` files. An id both trees define, such as
 `no-banner-comments`, gets one rule file per language
-(`no-banner-comments-rust.mdc`, `no-banner-comments-typescript.mdc`).
+(`no-banner-comments-rust.md`, `no-banner-comments-typescript.md`).
 
 In a polyglot project the shared principles carry both idioms:
 
@@ -196,9 +209,8 @@ already defines — move a hand-written `[lints.clippy]` into a rule instead.
 
 - **After each edit** — `.standards/hooks/ast-grep.sh` scans the edited `.rs` file
   with the ast-grep rules only. It is fast enough to run on every edit.
-- **When the agent stops** — `.standards/hooks/rust-gate.sh`, registered as a
-  Claude Code `Stop` hook and a Cursor `stop` hook, runs in order and stops at the
-  first failure:
+- **When Claude stops** — `.standards/hooks/rust-gate.sh`, registered as a
+  `Stop` hook, runs in order and stops at the first failure:
   1. `cargo fmt --all --check`
   2. `cargo clippy --workspace --all-targets -- -D warnings`
   3. `ast-grep scan -c .standards/sgconfig.yml`
@@ -207,9 +219,9 @@ already defines — move a hand-written `[lints.clippy]` into a rule instead.
   6. `cargo machete`
   7. `typos`
 
-  The gate skips when no `.rs` file or `Cargo.toml` has changed. A failure sends
-  the agent back to work with the output: exit 2 and stderr for Claude Code, a
-  `followup_message` for Cursor.
+  The gate skips when no `.rs` file or `Cargo.toml` has changed. A failure exits 2
+  with the output on stderr, which sends Claude back to work on it. Claude Code
+  ends the turn anyway after eight blocks in a row.
 
 The gate treats a missing tool as a failure and prints how to install it:
 
@@ -243,15 +255,15 @@ Every file sync writes is recorded in `.standards/lock.json` as two hashes — t
 file as it stands, and the upstream text it was reconciled against:
 
 ```json
-".cursor/rules/no-null.mdc": {
+".claude/rules/no-null.md": {
   "local":  "498e953d51112a69",
   "source": "e7ab21768adbd20e"
 }
 ```
 
-A managed block inside a larger file is tracked on its own, keyed as
-`Cargo.toml#standards`: only the block is hashed, and a conflict carries only the
-block.
+A managed part of a larger file is tracked on its own, keyed as
+`Cargo.toml#standards`, `AGENTS.md#standards` or `.claude/settings.json#standards`:
+only that part is hashed, and a conflict carries only that part.
 
 Those two are what make each state distinguishable, **per rule**. Bumping a version
 only touches rules whose content actually changed; the rest stay silent.
@@ -261,6 +273,10 @@ only touches rules whose content actually changed; the rest stay silent.
 | untouched | changed | **stale** — applied silently |
 | edited | unchanged | **pinned** — left alone |
 | edited | changed | **conflict** — needs a merge |
+
+A file sync no longer generates — a retired rule, or the `.cursor/` files from
+versions before Claude Code became the only target — is deleted if it still
+matches the lock. An edited one is left in place and sync says so.
 
 ### Resolving a conflict
 
@@ -277,8 +293,8 @@ Sync writes every conflict to `.standards/conflicts.json` and exits `2`:
 
 Each conflict carries `mine`, `theirs`, and `base` — the upstream text you last
 reconciled against — so the merge is genuinely three-way rather than a guess. The
-`resolve-standards-conflicts` skill is installed into the project, so Claude Code
-and Cursor pick it up without being told the procedure.
+`resolve-standards-conflicts` skill is installed into `.claude/skills/`, so Claude
+Code picks it up without being told the procedure.
 
 After merging, `standards resolve <rule>` records the merged file against the
 upstream text it was merged with. That rule then stays quiet until it changes

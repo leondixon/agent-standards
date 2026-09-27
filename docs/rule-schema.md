@@ -34,7 +34,7 @@ title: No type assertions       # sentence case, used as the H1
 layer: any                      # any | backend | frontend | schema | test
 presets: [base]                 # which presets include this rule
 severity: error                 # error | warn
-outputs: [mdc, agents-md, eslint, oxlint, hook]
+outputs: [claude-rule, agents-md, eslint, oxlint, hook]
 eslint:                         # only when this rule maps to a lint rule
   rule: ts/consistent-type-assertions
   options: { assertionStyle: never }
@@ -53,7 +53,7 @@ title: Propagate errors, never panic
 layer: any
 presets: [base]
 severity: error
-outputs: [mdc, agents-md, cargo-lints, clippy-config]
+outputs: [claude-rule, agents-md, cargo-lints, clippy-config]
 lints:
   rust:   { unsafe_code: forbid }
   clippy: { pedantic: { level: warn, priority: -1 }, unwrap_used: deny }
@@ -68,11 +68,11 @@ clippy:
 | Field | Required | Meaning |
 |---|---|---|
 | `id` | yes | Stable identifier. Must equal the directory name. |
-| `title` | yes | Human title. Becomes the `.mdc` H1. |
+| `title` | yes | Human title. Becomes the rule file's H1. |
 | `layer` | yes | **Semantic** target, never a path. Resolved to globs at sync time from the consuming repo's `.standards/config.json`. |
 | `presets` | yes | Presets that install this rule. `base` is always installed. |
 | `severity` | yes | Severity in generated ESLint and Oxlint configs. |
-| `outputs` | yes | Which artefacts to generate: `mdc`, `agents-md`, `eslint`, `oxlint`, `hook`, `cargo-lints`, `clippy-config`, `ast-grep`. An `eslint` output also writes `.standards/.oxlintrc.json` on sync. |
+| `outputs` | yes | Which artefacts to generate: `claude-rule` (`.claude/rules/<id>.md`), `agents-md` (the summary block in `AGENTS.md` or `CLAUDE.md`), `eslint`, `oxlint`, `hook`, `cargo-lints`, `clippy-config`, `ast-grep`. An `eslint` output also writes `.standards/.oxlintrc.json` on sync. |
 | `eslint` | no | Maps to an existing lint rule (`rule` + `options`), or set `own: true` when `rule.js` in this directory provides the implementation. |
 | `oxlint` | no | Same shape as `eslint`. Own implementations reuse `rule.js` via Oxlint JS plugins. Mapped names such as `ts/foo` become `typescript/foo`. Omit to derive from `eslint`. |
 | `lints` | with `cargo-lints` | Lint levels by tool: `rust` (rustc), `clippy`, `bevy` (`bevy_lint`). A level is `allow`, `expect`, `warn`, `deny` or `forbid`, or a map with `level` plus Cargo's other keys (`priority`, `check-cfg`). `bevy` takes a level only — `bevy_lint` has no priority. |
@@ -148,5 +148,6 @@ Markdown after the frontmatter. Convention:
 2. `## Prefer` / `## Bad` / `## Good` with short examples.
 3. `## Exceptions` when real ones exist.
 
-The body is copied verbatim into `.mdc`. The first paragraph is condensed into
-the `AGENTS.md` bullet, so keep it self-contained.
+The body is copied verbatim into `.claude/rules/<id>.md`, under a `paths:`
+frontmatter generated from the rule's layer. The first paragraph is condensed
+into the `AGENTS.md` bullet, so keep it self-contained.
