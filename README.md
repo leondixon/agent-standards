@@ -1,9 +1,9 @@
 # agent-standards
 
-Portable coding standards for Claude Code, with one source of truth per rule.
-Prose, lint rules (ESLint and Oxlint for TypeScript; Cargo lint levels, Clippy
-and ast-grep for Rust), and Claude Code hooks are all generated from the same
-directory, so they cannot drift apart.
+Portable coding standards with one source of truth per rule. Prose (in
+`AGENTS.md`), lint rules (ESLint and Oxlint for TypeScript; Cargo lint levels,
+Clippy and ast-grep for Rust), and Claude Code hooks are all generated from the
+same directory, so they cannot drift apart.
 
 ```sh
 npx @leondixon/agent-standards init
@@ -62,20 +62,23 @@ standards/typescript/base/no-type-assertions/
 └─ __fixtures__/      valid/ + invalid/
 ```
 
-From that, sync generates what Claude Code reads natively, plus the lint configs:
+From that, sync generates:
 
 | Artefact | Where |
 |---|---|
-| One rule per standard, scoped with `paths:` so it loads only for matching files | `.claude/rules/<id>.md` |
-| A one-line-per-rule summary, in a managed block | `CLAUDE.md` if the project has one, otherwise `AGENTS.md` |
+| Every rule's full text, one managed block per rule, and how to resolve sync conflicts | `AGENTS.md` |
 | Hooks, as managed entries alongside your own settings | `.claude/settings.json` |
-| The conflict-merging skill | `.claude/skills/resolve-standards-conflicts/` |
 | Flat ESLint and Oxlint configs | `.standards/` |
 
-The summary goes to `CLAUDE.md` when one exists because Claude Code reads
-`AGENTS.md` only in a project without a `CLAUDE.md`. In `.claude/settings.json`,
-sync owns only the hooks that run a script from `.standards/hooks/`; permissions,
-env and your own hooks are left alone.
+Sync adds its blocks after whatever the project already has in `AGENTS.md`, and
+never touches text outside them. Each rule block is tracked on its own, so editing
+one rule to fit the project pins that rule only.
+
+Claude Code reads `AGENTS.md` only when the project has no `CLAUDE.md`. If yours
+has one, add a line with `@AGENTS.md` to it; sync warns until you do.
+
+In `.claude/settings.json`, sync owns only the hooks that run a script from
+`.standards/hooks/`; permissions, env and your own hooks are left alone.
 
 For Rust it also writes a managed lint block in `Cargo.toml`, a `clippy.toml`,
 ast-grep rules, and a quality gate that runs when the agent stops — see
@@ -109,8 +112,7 @@ A Rust project installs `standards/core/` plus `standards/rust/`. A repo with bo
 `Cargo.toml` and `package.json` installs `core`, `rust` **and** `typescript` — each
 tree keeps its own rules, and layer globs are the union, so TypeScript rules match
 `.ts` files and Rust rules match `.rs` files. An id both trees define, such as
-`no-banner-comments`, gets one rule file per language
-(`no-banner-comments-rust.md`, `no-banner-comments-typescript.md`).
+`no-banner-comments`, gets one block per language, titled with the language.
 
 In a polyglot project the shared principles carry both idioms:
 
@@ -255,14 +257,14 @@ Every file sync writes is recorded in `.standards/lock.json` as two hashes — t
 file as it stands, and the upstream text it was reconciled against:
 
 ```json
-".claude/rules/no-null.md": {
+".standards/eslint.config.js": {
   "local":  "498e953d51112a69",
   "source": "e7ab21768adbd20e"
 }
 ```
 
 A managed part of a larger file is tracked on its own, keyed as
-`Cargo.toml#standards`, `AGENTS.md#standards` or `.claude/settings.json#standards`:
+`AGENTS.md#no-null`, `Cargo.toml#standards` or `.claude/settings.json#standards`:
 only that part is hashed, and a conflict carries only that part.
 
 Those two are what make each state distinguishable, **per rule**. Bumping a version
@@ -274,9 +276,9 @@ only touches rules whose content actually changed; the rest stay silent.
 | edited | unchanged | **pinned** — left alone |
 | edited | changed | **conflict** — needs a merge |
 
-A file sync no longer generates — a retired rule, or the `.cursor/` files from
-versions before Claude Code became the only target — is deleted if it still
-matches the lock. An edited one is left in place and sync says so.
+Anything sync no longer generates — a retired rule's block, or the `.cursor/` and
+`.claude/rules/` files of earlier versions — is removed if it still matches the
+lock. An edited one is left in place and sync says so.
 
 ### Resolving a conflict
 
@@ -287,14 +289,14 @@ Sync writes every conflict to `.standards/conflicts.json` and exits `2`:
 
     ! no-null
 
-  Run /resolve-standards-conflicts in your agent to merge them,
-  or resolve by hand and run standards resolve <rule>.
+  Ask your agent to resolve the standards conflicts — AGENTS.md explains how —
+  or merge by hand and run standards resolve <rule>.
 ```
 
 Each conflict carries `mine`, `theirs`, and `base` — the upstream text you last
 reconciled against — so the merge is genuinely three-way rather than a guess. The
-`resolve-standards-conflicts` skill is installed into `.claude/skills/`, so Claude
-Code picks it up without being told the procedure.
+procedure is written into `AGENTS.md`, so any agent can follow it without being
+told.
 
 After merging, `standards resolve <rule>` records the merged file against the
 upstream text it was merged with. That rule then stays quiet until it changes
