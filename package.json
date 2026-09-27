@@ -1,6 +1,6 @@
 {
   "name": "@leondixon/agent-standards",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Portable coding standards: one rule source for AGENTS.md, lint configs, and Claude Code hooks",
   "license": "MIT",
