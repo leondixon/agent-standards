@@ -4,7 +4,7 @@ title: Screenshots disable animations
 layer: test
 presets: [testing]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

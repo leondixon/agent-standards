@@ -4,7 +4,7 @@ title: Mutations invalidate or update the cache
 layer: frontend
 presets: [react-query]
 severity: warn
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

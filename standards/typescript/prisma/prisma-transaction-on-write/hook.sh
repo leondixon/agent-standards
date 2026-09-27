@@ -2,7 +2,7 @@
 set -euo pipefail
 
 input=$(cat)
-file_path=$(echo "$input" | jq -r '.file_path // .tool_input.file_path // empty')
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
 
 if [[ -z "$file_path" || ( "$file_path" != *.ts && "$file_path" != *.tsx ) ]]; then
   echo '{}'
@@ -27,12 +27,15 @@ if [[ -z "$added_lines" ]]; then
 fi
 
 jq -n --arg file "$file_path" '{
-  additional_context: (
-    "New Prisma await line(s) in the Git diff for \($file) (added lines only; unchanged code was not scanned). "
-    + "Assess whether this operation participates in a read-modify-write flow, "
-    + "multiple dependent writes, or an invariant that concurrent requests could violate. "
-    + "Use a transaction or appropriate database-level concurrency control when required; "
-    + "briefly confirm if a transaction is not needed."
-  )
+  hookSpecificOutput: {
+    hookEventName: "PostToolUse",
+    additionalContext: (
+      "New Prisma await line(s) in the Git diff for \($file) (added lines only; unchanged code was not scanned). "
+      + "Assess whether this operation participates in a read-modify-write flow, "
+      + "multiple dependent writes, or an invariant that concurrent requests could violate. "
+      + "Use a transaction or appropriate database-level concurrency control when required; "
+      + "briefly confirm if a transaction is not needed."
+    )
+  }
 }'
 exit 0

@@ -71,13 +71,13 @@ describe('buildArtefacts', () => {
     expect(byPath['.standards/ast-grep/rules/no-todo-macro.yml']).toBeDefined()
     expect(byPath['.standards/hooks/rust-gate.sh'].content).toContain('bevy_lint=true')
 
-    const claude = JSON.parse(byPath['.standards/claude-hooks.json'].content)
-    expect(claude.hooks.PostToolUse[0].hooks.map(hook => hook.command)).toEqual(['.standards/hooks/ast-grep.sh'])
-    expect(claude.hooks.Stop[0].hooks.map(hook => hook.command)).toEqual(['.standards/hooks/rust-gate.sh'])
-
-    const cursor = JSON.parse(byPath['.cursor/hooks.json'].content)
-    expect(cursor.hooks.afterFileEdit).toEqual([{ command: '.standards/hooks/ast-grep.sh' }])
-    expect(cursor.hooks.stop).toEqual([{ command: '.standards/hooks/rust-gate.sh' }])
+    const settings = byPath['.claude/settings.json']
+    expect(settings.region).toBe('standards')
+    const hooks = JSON.parse(settings.content)
+    expect(hooks.PostToolUse[0].matcher).toBe('Edit|Write')
+    expect(hooks.PostToolUse[0].hooks.map(hook => hook.command)).toEqual(['cd "$CLAUDE_PROJECT_DIR" && .standards/hooks/ast-grep.sh'])
+    expect(hooks.Stop[0].hooks.map(hook => hook.command)).toEqual(['cd "$CLAUDE_PROJECT_DIR" && .standards/hooks/rust-gate.sh'])
+    expect(artefacts.some(entry => entry.path.startsWith('.cursor'))).toBe(false)
   })
 
   it('given Rust lint rules and no Cargo.toml, when planned, then it fails fast', () => {
@@ -88,15 +88,15 @@ describe('buildArtefacts', () => {
   })
 
   it('given one id in two language trees, when planned, then each gets its own rule file', () => {
-    const rule = language => selected({ id: 'no-banner-comments', title: 'No banner comments', language, severity: 'error', body: 'x', outputs: ['mdc'] })
+    const rule = language => selected({ id: 'no-banner-comments', title: 'No banner comments', language, severity: 'error', body: 'x', outputs: ['claude-rule'] })
     const artefacts = buildArtefacts(
       [rule('typescript'), rule('rust')],
       { languages: ['rust', 'typescript'], presets: ['base'], layers: { any: ['**/*'] }, sourcePath: findSourceRoot() },
     )
 
-    expect(artefacts.map(entry => entry.path).filter(path => path.startsWith('.cursor/rules/'))).toEqual([
-      '.cursor/rules/no-banner-comments-typescript.mdc',
-      '.cursor/rules/no-banner-comments-rust.mdc',
+    expect(artefacts.map(entry => entry.path).filter(path => path.startsWith('.claude/rules/'))).toEqual([
+      '.claude/rules/no-banner-comments-typescript.md',
+      '.claude/rules/no-banner-comments-rust.md',
     ])
   })
 })

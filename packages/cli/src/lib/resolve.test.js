@@ -7,7 +7,7 @@ import { readConflicts, writeConflicts } from './conflicts.js'
 import { resolveCommand } from '../commands/resolve.js'
 
 let root
-const RULE_PATH = '.cursor/rules/no-null.mdc'
+const RULE_PATH = '.claude/rules/no-null.md'
 
 const BASE = 'rule v1'
 const MINE = 'rule v1\n- project exception'
@@ -16,7 +16,7 @@ const MERGED = 'rule v2\n- project exception'
 
 function project() {
   root = mkdtempSync(join(tmpdir(), 'standards-resolve-'))
-  mkdirSync(join(root, '.cursor', 'rules'), { recursive: true })
+  mkdirSync(join(root, '.claude', 'rules'), { recursive: true })
   writeConfig(root, { languages: ['typescript'], presets: ['base'], layers: { any: ['**/*'] } })
   return root
 }
@@ -83,7 +83,7 @@ describe('resolve', () => {
     conflictState()
     writeConflicts(root, [
       { rule: 'no-null', path: RULE_PATH, state: 'drifted', mine: MINE, theirs: THEIRS, base: BASE },
-      { rule: 'no-banner-comments', path: '.cursor/rules/no-banner-comments.mdc', state: 'drifted', mine: 'a', theirs: 'b', base: 'a' },
+      { rule: 'no-banner-comments', path: '.claude/rules/no-banner-comments.md', state: 'drifted', mine: 'a', theirs: 'b', base: 'a' },
     ])
     writeFileSync(join(root, RULE_PATH), MERGED)
 

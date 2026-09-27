@@ -4,7 +4,7 @@ title: No lossy casts
 layer: any
 presets: [base]
 severity: error
-outputs: [mdc, agents-md, cargo-lints]
+outputs: [claude-rule, agents-md, cargo-lints]
 lints:
   clippy: { cast_possible_truncation: deny, cast_sign_loss: deny, cast_possible_wrap: deny, cast_lossless: deny, cast_precision_loss: allow }
 ---

@@ -4,7 +4,7 @@ title: No unsafe code
 layer: any
 presets: [base]
 severity: error
-outputs: [mdc, agents-md, cargo-lints]
+outputs: [claude-rule, agents-md, cargo-lints]
 lints:
   rust: { unsafe_code: forbid }
 ---

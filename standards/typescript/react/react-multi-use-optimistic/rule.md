@@ -4,7 +4,7 @@ title: One useOptimistic per component
 layer: frontend
 presets: [react]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

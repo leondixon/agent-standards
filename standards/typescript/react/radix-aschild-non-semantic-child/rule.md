@@ -4,7 +4,7 @@ title: asChild needs a semantic child
 layer: frontend
 presets: [react]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

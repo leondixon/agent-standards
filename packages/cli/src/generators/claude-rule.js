@@ -5,11 +5,6 @@ const LANGUAGE_TITLES = {
   rust: 'Rust',
 }
 
-function summary(body) {
-  const paragraph = body.split('\n\n').find(block => !block.startsWith('#'))
-  return (paragraph ?? '').replace(/\n/g, ' ').trim()
-}
-
 function languageTitle(language) {
   return LANGUAGE_TITLES[language] ?? language
 }
@@ -32,19 +27,17 @@ function bodyFor(rule, languages) {
   return `${rule.body}\n\n${sections.join('\n\n')}`
 }
 
-export function generateMdc(rule, layerMap, languages = []) {
+/**
+ * A `.claude/rules/` file. Claude Code loads it when it reads a file matching
+ * `paths`, so each rule costs context only where it applies.
+ */
+export function generateClaudeRule(rule, layerMap, languages = []) {
   const list = Array.isArray(languages) ? languages : [languages]
   const globs = resolveGlobs(rule, layerMap)
-  const alwaysApply = rule.layer === 'any' && !globs
   const body = bodyFor(rule, list)
+  const frontmatter = globs
+    ? `---\npaths:\n${globs.map(glob => `  - ${JSON.stringify(glob)}`).join('\n')}\n---\n\n`
+    : ''
 
-  const frontmatter = [
-    '---',
-    `description: ${summary(body).slice(0, 160)}`,
-    globs ? `globs: ${globs.join(',')}` : undefined,
-    `alwaysApply: ${alwaysApply}`,
-    '---',
-  ].filter(Boolean)
-
-  return `${frontmatter.join('\n')}\n\n# ${rule.title}\n\n${body}\n`
+  return `${frontmatter}# ${rule.title}\n\n${body}\n`
 }

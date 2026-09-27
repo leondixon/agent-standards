@@ -4,7 +4,7 @@ title: Single responsibility in names
 layer: any
 presets: [base]
 severity: warn
-outputs: [mdc, agents-md, hook]
+outputs: [claude-rule, agents-md, hook]
 ---
 
 A name that answers a question must not also imply a side effect. Keep query and

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 input=$(cat)
-file_path=$(echo "$input" | jq -r '.file_path // .tool_input.file_path // empty')
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
 
 if [[ -z "$file_path" || ( "$file_path" != *.ts && "$file_path" != *.tsx ) || "$file_path" == *.d.ts ]]; then
   echo '{}'
@@ -114,16 +114,19 @@ helpers_list=$(
 )
 
 jq -n --arg file "$file_path" --arg helpers "$helpers_list" '{
-  additional_context: (
-    "Single-use helper(s) newly added in \($file):\n"
-    + $helpers
-    + "\nReview the call site against `.cursor/rules/narrative-code-structure.mdc`. "
-    + "Keep sequencing, decisions, and side effects visible there so it reads "
-    + "top-to-bottom as a story. Inline pass-through and middle-layer wrappers "
-    + "that merely rename, reorder, or group calls — including exported helpers "
-    + "with only one consumer. Keep a named collaborator only when it is reused, "
-    + "represents an independently meaningful domain operation, or contains "
-    + "non-trivial logic that deserves isolated tests."
-  )
+  hookSpecificOutput: {
+    hookEventName: "PostToolUse",
+    additionalContext: (
+      "Single-use helper(s) newly added in \($file):\n"
+      + $helpers
+      + "\nReview the call site against `.claude/rules/narrative-structure.md`. "
+      + "Keep sequencing, decisions, and side effects visible there so it reads "
+      + "top-to-bottom as a story. Inline pass-through and middle-layer wrappers "
+      + "that merely rename, reorder, or group calls — including exported helpers "
+      + "with only one consumer. Keep a named collaborator only when it is reused, "
+      + "represents an independently meaningful domain operation, or contains "
+      + "non-trivial logic that deserves isolated tests."
+    )
+  }
 }'
 exit 0

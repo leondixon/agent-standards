@@ -26,16 +26,21 @@ Each entry has four fields:
 | Field | Meaning |
 |---|---|
 | `rule` | Rule id, e.g. `no-null` |
-| `path` | File to write, e.g. `.cursor/rules/no-null.mdc` |
-| `region` | Present only for a managed block, e.g. `standards` in `Cargo.toml` |
+| `path` | File to write, e.g. `.claude/rules/no-null.md` |
+| `region` | Present only when sync owns part of the file: `Cargo.toml`, `AGENTS.md` or `CLAUDE.md`, `.claude/settings.json` |
 | `mine` | The project's current file |
 | `theirs` | The new upstream rule |
 | `base` | The upstream text `mine` was last reconciled against |
 
-When `region` is set, `mine`, `theirs` and `base` are only the block between
-`` # >>> standards (managed by `standards sync`) `` and `# <<< standards`. Merge
-that block and write it back between the same markers; leave the rest of the
-file alone, and keep both marker lines.
+When `region` is set, `mine`, `theirs` and `base` cover only the part sync owns.
+Merge that part and leave the rest of the file alone:
+
+- **`Cargo.toml`, `AGENTS.md`, `CLAUDE.md`** — the block between the
+  `>>> standards` and `<<< standards` marker lines. Write it back between the same
+  markers and keep both marker lines
+- **`.claude/settings.json`** — the hooks whose command runs a script from
+  `.standards/hooks/`, as a JSON object keyed by event. Edit those hook entries in
+  place; the project's other settings and hooks are not part of the conflict
 
 `base` makes this a real three-way merge. Diff `base → mine` to see what the
 project changed, and `base → theirs` to see what upstream changed. When `base` is
@@ -53,8 +58,8 @@ Work one rule at a time. For each:
 - **They genuinely contradict** — keep the project's version and note why in the
   summary, since a local override is a deliberate decision
 
-Preserve the frontmatter from `theirs`: `globs` and `alwaysApply` are generated
-from the project's layer map and must not be hand-edited.
+Preserve the frontmatter from `theirs`: `paths` is generated from the project's
+layer map and must not be hand-edited.
 
 Never drop a project-specific exception silently. If you cannot place it in the new
 structure, keep it under its own `## Exceptions` heading.

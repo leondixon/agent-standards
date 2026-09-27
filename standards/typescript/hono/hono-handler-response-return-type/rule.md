@@ -4,7 +4,7 @@ title: No return annotation on Hono handlers
 layer: backend
 presets: [hono]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

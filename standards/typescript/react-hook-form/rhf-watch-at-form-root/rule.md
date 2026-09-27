@@ -4,7 +4,7 @@ title: No watch at the form root
 layer: frontend
 presets: [react-hook-form]
 severity: warn
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

@@ -4,7 +4,7 @@ import { parseFrontmatter } from './frontmatter.js'
 
 const LAYERS = new Set(['any', 'backend', 'frontend', 'schema', 'test'])
 const SEVERITIES = new Set(['error', 'warn'])
-const OUTPUTS = new Set(['mdc', 'agents-md', 'eslint', 'oxlint', 'hook', 'cargo-lints', 'clippy-config', 'ast-grep'])
+const OUTPUTS = new Set(['claude-rule', 'agents-md', 'eslint', 'oxlint', 'hook', 'cargo-lints', 'clippy-config', 'ast-grep'])
 const LINT_TOOLS = new Set(['rust', 'clippy', 'bevy'])
 const LINT_LEVELS = new Set(['allow', 'expect', 'warn', 'deny', 'forbid'])
 const REQUIRED = ['id', 'title', 'layer', 'presets', 'severity', 'outputs']

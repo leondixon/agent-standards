@@ -2,7 +2,7 @@
 set -euo pipefail
 
 input=$(cat)
-file_path=$(jq -r '.file_path // .tool_input.file_path // empty' <<<"$input")
+file_path=$(jq -r '.tool_input.file_path // empty' <<<"$input")
 
 if [[ -z "$file_path" || ( "$file_path" != *.ts && "$file_path" != *.tsx ) || "$file_path" == *.d.ts ]]; then
   echo '{}'
@@ -96,14 +96,17 @@ fi
 names_list=$(printf '%s\n' "${flagged_names[@]}" | sed 's/^/- `/; s/$/`/')
 
 jq -n --arg file "$file_path" --arg names "$names_list" '{
-  additional_context: (
-    "Avoid `*With*` composite names in \($file):\n"
-    + $names
-    + "\nDo not name types/functions/modules `*With*` when that only means "
-    + "\"entity + Prisma include\" (`CampaignWithPartner`, `getUserWithRoles`, "
-    + "`userWithRolesInclude`). Prefer inferred `include` return types, a real "
-    + "domain name (`AuthorizedUser`), split query vs projection, or inline "
-    + "handler mapping (`.cursor/rules/no-with-composite-names.mdc`)."
-  )
+  hookSpecificOutput: {
+    hookEventName: "PostToolUse",
+    additionalContext: (
+      "Avoid `*With*` composite names in \($file):\n"
+      + $names
+      + "\nDo not name types/functions/modules `*With*` when that only means "
+      + "\"entity + Prisma include\" (`CampaignWithPartner`, `getUserWithRoles`, "
+      + "`userWithRolesInclude`). Prefer inferred `include` return types, a real "
+      + "domain name (`AuthorizedUser`), split query vs projection, or inline "
+      + "handler mapping (`.claude/rules/no-composite-join-names.md`)."
+    )
+  }
 }'
 exit 0

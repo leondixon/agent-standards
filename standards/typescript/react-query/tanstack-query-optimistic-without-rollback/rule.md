@@ -4,7 +4,7 @@ title: Optimistic updates need rollback
 layer: frontend
 presets: [react-query]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

@@ -4,7 +4,7 @@ title: No status code assertions in Hono
 layer: backend
 presets: [hono]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

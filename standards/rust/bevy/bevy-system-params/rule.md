@@ -4,7 +4,7 @@ title: Bevy system parameters
 layer: any
 presets: [bevy]
 severity: warn
-outputs: [mdc, agents-md, cargo-lints]
+outputs: [claude-rule, agents-md, cargo-lints]
 lints:
   clippy: { needless_pass_by_value: allow, too_many_arguments: allow, type_complexity: allow }
 ---

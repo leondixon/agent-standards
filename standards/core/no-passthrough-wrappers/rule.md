@@ -4,7 +4,7 @@ title: No pass-through wrappers
 layer: any
 presets: [base]
 severity: warn
-outputs: [mdc, agents-md, hook]
+outputs: [claude-rule, agents-md, hook]
 ---
 
 Do not add a layer that only renames, reorders, or groups calls to the layer beneath

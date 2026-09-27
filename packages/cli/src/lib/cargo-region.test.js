@@ -77,10 +77,10 @@ describe('Cargo.toml standards block', () => {
 
     expect(manifest().startsWith(original)).toBe(true)
     expect(manifest().trimEnd().endsWith('# <<< standards')).toBe(true)
-    expect(extractRegion(manifest())).toContain('[lints.clippy]\nunwrap_used = "deny"')
+    expect(extractRegion(manifest(), 'Cargo.toml')).toContain('[lints.clippy]\nunwrap_used = "deny"')
     expect(readLock(target).files[KEY]).toBeDefined()
     expect(readLock(target).files['Cargo.toml']).toBeUndefined()
-    expect(readBase(target, KEY)).toBe(extractRegion(manifest()))
+    expect(readBase(target, KEY)).toBe(extractRegion(manifest(), 'Cargo.toml'))
   })
 
   it('given edits outside the block, when upstream changes, then the block updates and the edits survive', async () => {
@@ -92,7 +92,7 @@ describe('Cargo.toml standards block', () => {
     expect(await sync()).toBe(0)
 
     expect(manifest()).toContain('serde = "1"')
-    expect(extractRegion(manifest())).toContain('unwrap_used = "warn"')
+    expect(extractRegion(manifest(), 'Cargo.toml')).toContain('unwrap_used = "warn"')
     expect(readConflicts(target)).toBeUndefined()
   })
 
@@ -112,16 +112,16 @@ describe('Cargo.toml standards block', () => {
     expect(await sync()).toBe(2)
     expect(resolveCommand(target, ['Cargo.toml'])).toBe(0)
 
-    const block = extractRegion(manifest())
+    const block = extractRegion(manifest(), 'Cargo.toml')
     expect(await sync()).toBe(0)
-    expect(extractRegion(manifest())).toBe(block)
+    expect(extractRegion(manifest(), 'Cargo.toml')).toBe(block)
     expect(fileState(target, 'Cargo.toml', readLock(target), readBase(target, KEY), 'standards')).toBe('pinned')
   })
 
   it('given edits inside the block and upstream, when synced, then the conflict carries only the block', async () => {
     project('package')
     await sync()
-    const base = extractRegion(manifest())
+    const base = extractRegion(manifest(), 'Cargo.toml')
     editManifest(text => text.replace('unwrap_used = "deny"', 'unwrap_used = "forbid"'))
     upstream('warn')
 
@@ -129,17 +129,17 @@ describe('Cargo.toml standards block', () => {
 
     const [conflict] = readConflicts(target).conflicts
     expect(conflict).toMatchObject({ path: 'Cargo.toml', region: 'standards', state: 'drifted', base })
-    expect(conflict.mine).toBe(extractRegion(manifest()))
+    expect(conflict.mine).toBe(extractRegion(manifest(), 'Cargo.toml'))
     expect(conflict.mine).not.toContain('[package]')
     expect(conflict.theirs).toContain('unwrap_used = "warn"')
-    expect(extractRegion(manifest())).toContain('unwrap_used = "forbid"')
+    expect(extractRegion(manifest(), 'Cargo.toml')).toContain('unwrap_used = "forbid"')
   })
 
   it('given a workspace root that is also a package, when synced, then the root opts into workspace lints', async () => {
     project('workspace-with-package')
     await sync()
 
-    const block = extractRegion(manifest())
+    const block = extractRegion(manifest(), 'Cargo.toml')
     expect(block).toContain('[workspace.lints.clippy]')
     expect(block).toContain('[lints]\nworkspace = true')
   })

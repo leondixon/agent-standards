@@ -2,7 +2,7 @@
 set -euo pipefail
 
 input=$(cat)
-file_path=$(jq -r '.file_path // .tool_input.file_path // empty' <<<"$input")
+file_path=$(jq -r '.tool_input.file_path // empty' <<<"$input")
 
 if [[ -z "$file_path" || ( "$file_path" != *.ts && "$file_path" != *.tsx ) || "$file_path" == *.d.ts ]]; then
   echo '{}'
@@ -65,13 +65,16 @@ fi
 names_list=$(printf '%s\n' "${flagged_names[@]}" | sed 's/^/- `/; s/$/`/')
 
 jq -n --arg file "$file_path" --arg names "$names_list" '{
-  additional_context: (
-    "Avoid By* qualifiers in names for \($file):\n"
-    + $names
-    + "\nLookup keys (customerId, userId, id, …) are interface details — keep them "
-    + "on the path/schema/parameter/arguments, not in collaborator, handler, describe, or "
-    + "operationId names. Prefer getFinancialAccounts over getFinancialAccountsByCustomerId "
-    + "(and likewise avoid *ByUserId*, *ById*, find_by_*, etc.)."
-  )
+  hookSpecificOutput: {
+    hookEventName: "PostToolUse",
+    additionalContext: (
+      "Avoid By* qualifiers in names for \($file):\n"
+      + $names
+      + "\nLookup keys (customerId, userId, id, …) are interface details — keep them "
+      + "on the path/schema/parameter/arguments, not in collaborator, handler, describe, or "
+      + "operationId names. Prefer getFinancialAccounts over getFinancialAccountsByCustomerId "
+      + "(and likewise avoid *ByUserId*, *ById*, find_by_*, etc.)."
+    )
+  }
 }'
 exit 0

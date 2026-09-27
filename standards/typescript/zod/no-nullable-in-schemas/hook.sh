@@ -2,14 +2,14 @@
 set -euo pipefail
 
 input=$(cat)
-file_path=$(jq -r '.file_path // .tool_input.file_path // empty' <<<"$input")
+file_path=$(jq -r '.tool_input.file_path // empty' <<<"$input")
 
 if [[ -z "$file_path" || "$file_path" != *.ts || "$file_path" == *.d.ts ]]; then
   echo '{}'
   exit 0
 fi
 
-new_text=$(jq -r '[.edits[]?.new_string // empty] | join("\n")' <<<"$input")
+new_text=$(jq -r '.tool_input.new_string // .tool_input.content // empty' <<<"$input")
 if [[ -z "$new_text" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   diff_output=$(git diff HEAD --unified=0 -- "$file_path" || true)
   if [[ -z "$diff_output" && -f "$file_path" ]] && \
@@ -36,8 +36,11 @@ joined=$(printf '%s, ' "${apis[@]}")
 joined=${joined%, }
 
 jq -n --arg file "$file_path" --arg apis "$joined" '{
-  additional_context: (
-    "Zod `\($apis)` used in \($file). `.nullable()` / `.nullish()` are only for ingesting external/API data where null is meaningful. Internal models and domain schemas must use `.optional()` (undefined), not null. If this schema is internal, replace with `.optional()`; if it is an ingest/boundary schema, keep and map null → undefined at the boundary."
-  )
+  hookSpecificOutput: {
+    hookEventName: "PostToolUse",
+    additionalContext: (
+      "Zod `\($apis)` used in \($file). `.nullable()` / `.nullish()` are only for ingesting external/API data where null is meaningful. Internal models and domain schemas must use `.optional()` (undefined), not null. If this schema is internal, replace with `.optional()`; if it is an ingest/boundary schema, keep and map null → undefined at the boundary."
+    )
+  }
 }'
 exit 0

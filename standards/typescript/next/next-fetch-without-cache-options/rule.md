@@ -4,7 +4,7 @@ title: Fetch declares its caching
 layer: frontend
 presets: [next]
 severity: warn
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

@@ -4,7 +4,7 @@ title: No lookup qualifiers in names
 layer: any
 presets: [base]
 severity: warn
-outputs: [mdc, agents-md, hook]
+outputs: [claude-rule, agents-md, hook]
 ---
 
 Lookup keys (`customerId`, `userId`, `id`, …) are interface details. Do not bake a

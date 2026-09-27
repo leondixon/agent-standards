@@ -4,7 +4,7 @@ title: No backwards-compatibility shims
 layer: any
 presets: [base]
 severity: warn
-outputs: [mdc, agents-md]
+outputs: [claude-rule, agents-md]
 ---
 
 In a project whose environments are rebuilt on deploy, do not preserve old shapes,

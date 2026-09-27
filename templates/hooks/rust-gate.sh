@@ -1,33 +1,20 @@
 #!/usr/bin/env bash
-# Runs the full Rust gate when the agent stops. A failure sends the agent back
-# to work with the failing output instead of letting it finish.
+# Runs the full Rust gate when Claude stops. Exit 2 sends Claude back to work
+# with the failing output instead of letting it finish; Claude Code ends the
+# turn anyway after eight consecutive blocks.
 set -uo pipefail
 
 bevy_lint=__BEVY_LINT__
-input=$(cat)
 
-# Cursor sends { status, loop_count } and continues only on a followup_message;
-# Claude Code blocks the stop on exit 2 and reads stderr.
-is_cursor() {
-  jq -e '.hook_event_name != "Stop"' >/dev/null 2>&1 <<<"$input"
-}
-
-if is_cursor && [[ "$(jq -r '.status' <<<"$input")" != "completed" ]]; then
-  exit 0
-fi
+# Drain the Stop payload so Claude Code never blocks writing it.
+cat >/dev/null
 
 # Root Cargo.toml needs its own pathspec: `**/` requires a leading directory.
 changed=$(git status --porcelain -- '*.rs' 'Cargo.toml' '**/Cargo.toml' 2>/dev/null)
 [[ -z "$changed" ]] && exit 0
 
 fail() {
-  local message="Rust gate failed — fix this before finishing:
-$1"
-  if is_cursor; then
-    jq -n --arg message "$message" '{ followup_message: $message }'
-    exit 0
-  fi
-  printf '%s\n' "$message" >&2
+  printf 'Rust gate failed — fix this before finishing:\n%s\n' "$1" >&2
   exit 2
 }
 

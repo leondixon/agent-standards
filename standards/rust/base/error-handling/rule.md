@@ -4,7 +4,7 @@ title: Propagate errors, never panic
 layer: any
 presets: [base]
 severity: error
-outputs: [mdc, agents-md, cargo-lints, clippy-config]
+outputs: [claude-rule, agents-md, cargo-lints, clippy-config]
 lints:
   clippy: { unwrap_used: deny, expect_used: deny, panic: deny, map_err_ignore: deny, let_underscore_must_use: deny }
 clippy:

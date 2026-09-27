@@ -90,5 +90,5 @@ export function generateCargoLints(rules, manifestText) {
     }
   }
 
-  return wrapRegion(tables.map(({ header, entries }) => renderTable(header, entries)).join('\n\n'))
+  return wrapRegion(tables.map(({ header, entries }) => renderTable(header, entries)).join('\n\n'), 'Cargo.toml')
 }

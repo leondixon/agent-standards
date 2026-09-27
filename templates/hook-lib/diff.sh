@@ -6,7 +6,7 @@
 hook_file_path() {
   local input path
   input=$(cat)
-  path=$(jq -r '.file_path // .tool_input.file_path // empty' <<<"$input")
+  path=$(jq -r '.tool_input.file_path // empty' <<<"$input")
   [[ -z "$path" ]] && return 1
   printf '%s' "$path"
 }
@@ -54,9 +54,9 @@ hook_declared_names() {
   } | awk 'NF' | sort -u
 }
 
-# Emit a hook result carrying guidance back to the agent.
+# Emit a PostToolUse result carrying guidance back to Claude.
 hook_report() {
-  jq -n --arg context "$1" '{ additional_context: $context }'
+  jq -n --arg context "$1" '{ hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: $context } }'
 }
 
 # Emit an empty result and exit successfully.

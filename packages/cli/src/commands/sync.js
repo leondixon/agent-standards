@@ -29,12 +29,18 @@ export function writeArtefact(root, artefact) {
   const absolute = join(root, artefact.path)
   mkdirSync(dirname(absolute), { recursive: true })
 
+  const existing = existsSync(absolute) ? readFileSync(absolute, 'utf8') : ''
   const content = artefact.region
-    ? replaceRegion(readFileSync(absolute, 'utf8'), artefact.content, artefact.path)
+    ? replaceRegion(existing, artefact.content, artefact.path)
     : artefact.content
 
   writeFileSync(absolute, content)
   if (artefact.executable) chmodSync(absolute, 0o755)
+}
+
+/** Claude reads AGENTS.md only when the project has no CLAUDE.md of its own. */
+function instructionsFile(root) {
+  return ['CLAUDE.md', join('.claude', 'CLAUDE.md')].find(path => existsSync(join(root, path))) ?? 'AGENTS.md'
 }
 
 function readManifest(root) {
@@ -59,7 +65,12 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   }
 
   const lock = readLock(targetRoot)
-  const artefacts = buildArtefacts(rules, { ...config, sourcePath: sourceRoot, cargoManifest: readManifest(targetRoot) })
+  const artefacts = buildArtefacts(rules, {
+    ...config,
+    sourcePath: sourceRoot,
+    cargoManifest: readManifest(targetRoot),
+    instructionsFile: instructionsFile(targetRoot),
+  })
   const plan = planSync(targetRoot, artefacts, lock)
   const counts = summarise(plan)
 

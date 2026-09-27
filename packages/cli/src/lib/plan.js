@@ -3,15 +3,14 @@ import { join } from 'node:path'
 import { fileState } from './config.js'
 import { ConfigurationError } from './errors.js'
 import { appliesTo } from './layers.js'
-import { STANDARDS_REGION } from './region.js'
+import { STANDARDS_REGION, wrapRegion } from './region.js'
 import {
   generateAgentsMd,
   generateCargoLints,
   generateClaudeHooks,
+  generateClaudeRule,
   generateClippyConfig,
-  generateCursorHooks,
   generateEslintConfig,
-  generateMdc,
   generateOxlintConfig,
 } from '../generators/index.js'
 
@@ -50,10 +49,10 @@ export function buildArtefacts(rules, config) {
   const shared = sharedIds(selected)
 
   for (const rule of selected) {
-    if (rule.outputs.includes('mdc')) {
+    if (rule.outputs.includes('claude-rule')) {
       artefacts.push({
-        path: join('.cursor', 'rules', shared.has(rule.id) ? `${rule.id}-${rule.language}.mdc` : `${rule.id}.mdc`),
-        content: generateMdc(rule, config.layers, config.languages),
+        path: join('.claude', 'rules', shared.has(rule.id) ? `${rule.id}-${rule.language}.md` : `${rule.id}.md`),
+        content: generateClaudeRule(rule, config.layers, config.languages),
         rule: rule.id,
       })
     }
@@ -93,18 +92,17 @@ export function buildArtefacts(rules, config) {
     })
   }
 
+  const instructionsFile = config.instructionsFile ?? 'AGENTS.md'
   artefacts.push({
-    path: join('.standards', 'AGENTS.md'),
-    content: generateAgentsMd(selected),
+    path: instructionsFile,
+    region: STANDARDS_REGION,
+    content: wrapRegion(generateAgentsMd(selected).trimEnd(), instructionsFile),
     rule: '(agents md)',
   })
 
   artefacts.push({
-    path: join('.standards', 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
-    content: readFileSync(
-      join(config.sourcePath, 'templates', 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
-      'utf8',
-    ),
+    path: join('.claude', 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
+    content: template(config, 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
     rule: '(conflict skill)',
   })
 
@@ -131,12 +129,8 @@ export function buildArtefacts(rules, config) {
 
   if (edit.length > 0 || stop.length > 0) {
     artefacts.push({
-      path: join('.cursor', 'hooks.json'),
-      content: generateCursorHooks({ edit, stop }),
-      rule: '(cursor hooks)',
-    })
-    artefacts.push({
-      path: join('.standards', 'claude-hooks.json'),
+      path: join('.claude', 'settings.json'),
+      region: STANDARDS_REGION,
       content: generateClaudeHooks({ edit, stop }),
       rule: '(claude hooks)',
     })

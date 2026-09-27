@@ -4,7 +4,7 @@ title: Fallible Bevy systems
 layer: any
 presets: [bevy]
 severity: error
-outputs: [mdc, agents-md, cargo-lints]
+outputs: [claude-rule, agents-md, cargo-lints]
 lints:
   bevy: { panicking_methods: deny }
 ---

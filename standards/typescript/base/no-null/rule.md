@@ -4,7 +4,7 @@ title: No null
 layer: any
 presets: [base]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

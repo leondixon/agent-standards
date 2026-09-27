@@ -4,7 +4,7 @@ title: No composite join names
 layer: any
 presets: [base]
 severity: warn
-outputs: [mdc, agents-md, hook]
+outputs: [claude-rule, agents-md, hook]
 ---
 
 Do not name types, functions, or modules `*With*` when the name only means

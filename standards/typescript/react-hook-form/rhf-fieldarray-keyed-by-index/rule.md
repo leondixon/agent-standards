@@ -4,7 +4,7 @@ title: Field arrays key by field id
 layer: frontend
 presets: [react-hook-form]
 severity: error
-outputs: [mdc, agents-md, eslint]
+outputs: [claude-rule, agents-md, eslint]
 eslint:
   own: true
 ---

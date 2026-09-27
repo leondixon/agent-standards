@@ -8,7 +8,7 @@ let root
 
 function setup() {
   root = mkdtempSync(join(tmpdir(), 'standards-'))
-  mkdirSync(join(root, '.cursor', 'rules'), { recursive: true })
+  mkdirSync(join(root, '.claude', 'rules'), { recursive: true })
   return root
 }
 
@@ -16,7 +16,7 @@ afterEach(() => {
   if (root) rmSync(root, { recursive: true, force: true })
 })
 
-const RELATIVE = '.cursor/rules/example.mdc'
+const RELATIVE = '.claude/rules/example.md'
 
 describe('fileState', () => {
   it('given no file and no lock entry, when checked, then it is missing', () => {
