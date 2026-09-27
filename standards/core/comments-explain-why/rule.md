@@ -4,7 +4,7 @@ title: Comments explain why, never what
 layer: any
 presets: [base]
 severity: error
-outputs: [claude-rule, agents-md]
+outputs: [agents-md]
 ---
 
 Do not write comments that restate what the code does — make names self-documenting

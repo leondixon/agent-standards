@@ -4,7 +4,7 @@ title: No silent lint suppression
 layer: any
 presets: [base]
 severity: error
-outputs: [claude-rule, agents-md, cargo-lints]
+outputs: [agents-md, cargo-lints]
 lints:
   clippy: { allow_attributes: deny, allow_attributes_without_reason: deny }
 ---

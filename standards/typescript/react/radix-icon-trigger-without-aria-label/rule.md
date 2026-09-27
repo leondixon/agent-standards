@@ -4,7 +4,7 @@ title: Icon triggers need an accessible name
 layer: frontend
 presets: [react]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

@@ -4,7 +4,7 @@ title: Bevy lints
 layer: any
 presets: [bevy]
 severity: warn
-outputs: [claude-rule, agents-md, cargo-lints]
+outputs: [agents-md, cargo-lints]
 lints:
   rust: { unexpected_cfgs: { level: warn, check-cfg: ['cfg(bevy_lint)'] } }
   bevy: { pedantic: warn, missing_reflect: warn }

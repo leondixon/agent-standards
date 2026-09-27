@@ -4,7 +4,7 @@ title: No arbitrary hex values in utilities
 layer: frontend
 presets: [tailwind]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

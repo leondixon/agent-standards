@@ -74,23 +74,37 @@ describe('settings.json hooks', () => {
   })
 })
 
-describe('markdown block', () => {
-  const block = wrapRegion('## Coding Standards\n\n- Use `?`.', 'AGENTS.md')
+describe('markdown blocks', () => {
+  const rule = id => wrapRegion(`### ${id}`, 'AGENTS.md', id)
 
-  it('given an AGENTS.md, when replaced, then the block is appended in HTML comment markers', () => {
-    expect(replaceRegion('# Project\n', block, 'AGENTS.md')).toBe([
+  it('given an AGENTS.md, when a block is added, then it is appended in named HTML comment markers', () => {
+    expect(replaceRegion('# Project\n', rule('no-null'), 'AGENTS.md', 'no-null')).toBe([
       '# Project',
       '',
-      '<!-- >>> standards (managed by `standards sync`) -->',
-      '## Coding Standards',
-      '',
-      '- Use `?`.',
-      '<!-- <<< standards -->',
+      '<!-- >>> standards:no-null -->',
+      '### no-null',
+      '<!-- <<< standards:no-null -->',
       '',
     ].join('\n'))
   })
 
+  it('given existing blocks and a project section after them, when a block is added, then it joins the other blocks', () => {
+    const text = `# Project\n\n${rule('a')}\n## Notes\n`
+    expect(replaceRegion(text, rule('b'), 'AGENTS.md', 'b'))
+      .toBe(`# Project\n\n${rule('a')}\n${rule('b')}\n## Notes\n`)
+  })
+
+  it('given two blocks, when one is extracted or removed, then the other is untouched', () => {
+    const text = `${rule('a')}\n${rule('b')}`
+    expect(extractRegion(text, 'AGENTS.md', 'b')).toBe(rule('b'))
+    expect(removeRegion(text, 'AGENTS.md', 'a')).toBe(rule('b'))
+  })
+
   it('given a block between project sections, when removed, then the sections are rejoined', () => {
-    expect(removeRegion(`# Project\n\n${block}\n## Notes\n`, 'AGENTS.md')).toBe('# Project\n\n## Notes\n')
+    expect(removeRegion(`# Project\n\n${rule('a')}\n## Notes\n`, 'AGENTS.md', 'a')).toBe('# Project\n\n## Notes\n')
+  })
+
+  it('given a start marker without its end, when read, then it fails naming both markers', () => {
+    expect(() => extractRegion('<!-- >>> standards:a -->\n', 'AGENTS.md', 'a')).toThrow(/<!-- <<< standards:a -->/)
   })
 })

@@ -4,7 +4,7 @@ title: Consider a transaction for grouped writes
 layer: any
 presets: [prisma]
 severity: warn
-outputs: [claude-rule, agents-md, hook]
+outputs: [agents-md, hook]
 ---
 
 When adding a database write, decide whether it needs a transaction — and say why

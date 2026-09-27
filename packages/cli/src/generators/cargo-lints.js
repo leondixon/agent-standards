@@ -1,5 +1,5 @@
 import { ConfigurationError } from '../lib/errors.js'
-import { removeRegion, wrapRegion } from '../lib/region.js'
+import { STANDARDS_REGION, removeRegion, wrapRegion } from '../lib/region.js'
 import { renderTable, tomlPaths } from '../lib/toml.js'
 
 const CARGO_TOOLS = ['rust', 'clippy']
@@ -58,7 +58,7 @@ function manifestShape(manifest) {
 export function generateCargoLints(rules, manifestText) {
   const included = rules.filter(rule => rule.outputs.includes('cargo-lints'))
   const lints = mergeLints(included)
-  const manifest = tomlPaths(removeRegion(manifestText, 'Cargo.toml'))
+  const manifest = tomlPaths(removeRegion(manifestText, 'Cargo.toml', STANDARDS_REGION))
   const shape = manifestShape(manifest)
   const prefix = shape.workspace ? 'workspace.' : ''
   const tables = []

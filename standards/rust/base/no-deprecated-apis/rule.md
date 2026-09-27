@@ -4,7 +4,7 @@ title: No deprecated APIs
 layer: any
 presets: [base]
 severity: error
-outputs: [claude-rule, agents-md, cargo-lints]
+outputs: [agents-md, cargo-lints]
 lints:
   rust: { deprecated: deny }
 ---

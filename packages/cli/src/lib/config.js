@@ -88,7 +88,7 @@ export function readTracked(root, relativePath, region) {
   if (!existsSync(absolute)) return undefined
 
   const text = readFileSync(absolute, 'utf8')
-  return region ? extractRegion(text, relativePath) : text
+  return region ? extractRegion(text, relativePath, region) : text
 }
 
 export function fileState(root, relativePath, lock, expected, region) {

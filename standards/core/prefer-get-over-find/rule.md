@@ -4,7 +4,7 @@ title: Prefer get over find for queries
 layer: any
 presets: [base]
 severity: warn
-outputs: [claude-rule, agents-md, hook]
+outputs: [agents-md, hook]
 ---
 
 Domain query collaborators that load or return data use `get*`, not `find*`. One

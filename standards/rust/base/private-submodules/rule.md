@@ -4,7 +4,7 @@ title: Private submodules
 layer: any
 presets: [base]
 severity: error
-outputs: [claude-rule, agents-md, ast-grep]
+outputs: [agents-md, ast-grep]
 ---
 
 Declare submodules private and expose a module's surface with `pub use` from its

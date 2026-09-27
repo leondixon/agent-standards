@@ -31,7 +31,7 @@ export function writeArtefact(root, artefact) {
 
   const existing = existsSync(absolute) ? readFileSync(absolute, 'utf8') : ''
   const content = artefact.region
-    ? replaceRegion(existing, artefact.content, artefact.path)
+    ? replaceRegion(existing, artefact.content, artefact.path, artefact.region)
     : artefact.content
 
   writeFileSync(absolute, content)
@@ -48,7 +48,7 @@ function removeEmptyParents(root, relativePath) {
 
 function removeArtefact(root, entry) {
   const absolute = join(root, entry.path)
-  const remaining = entry.region ? removeRegion(readFileSync(absolute, 'utf8'), entry.path) : ''
+  const remaining = entry.region ? removeRegion(readFileSync(absolute, 'utf8'), entry.path, entry.region) : ''
 
   if (remaining === '') {
     rmSync(absolute)
@@ -68,9 +68,14 @@ function forget(root, lock, entry) {
   }
 }
 
-/** Claude reads AGENTS.md only when the project has no CLAUDE.md of its own. */
-function instructionsFile(root) {
-  return ['CLAUDE.md', join('.claude', 'CLAUDE.md')].find(path => existsSync(join(root, path))) ?? 'AGENTS.md'
+/**
+ * Claude Code skips AGENTS.md in a project that has a CLAUDE.md, unless the
+ * CLAUDE.md imports it, so the standards would silently never load.
+ */
+function claudeMdHidingAgentsMd(root) {
+  return ['CLAUDE.md', join('.claude', 'CLAUDE.md')]
+    .filter(path => existsSync(join(root, path)))
+    .find(path => !readFileSync(join(root, path), 'utf8').includes('@AGENTS.md'))
 }
 
 function readManifest(root) {
@@ -79,7 +84,7 @@ function readManifest(root) {
 }
 
 function regionLabel(entry) {
-  return entry.region ? `${entry.path} (standards block)` : entry.path
+  return entry.region ? `${entry.path} › ${entry.region}` : entry.path
 }
 
 export async function syncCommand(sourceRoot, targetRoot, { write }) {
@@ -103,7 +108,6 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
     ...config,
     sourcePath: sourceRoot,
     cargoManifest: readManifest(targetRoot),
-    instructionsFile: instructionsFile(targetRoot),
   })
   const plan = planSync(targetRoot, artefacts, lock)
   const retired = planRetired(targetRoot, artefacts, lock)
@@ -114,9 +118,16 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   line(`  ${style.bold(config.languages.join(' + '))} ${style.dim('·')} ${config.presets.join(', ')}`)
   line()
 
+  const hidingFile = claudeMdHidingAgentsMd(targetRoot)
+  if (hidingFile) {
+    line(style.yellow(`  ${hidingFile} does not import AGENTS.md, so Claude Code will not read the standards.`))
+    line(style.yellow(`  Add a line with ${style.bold('@AGENTS.md')} to ${hidingFile}.`))
+    line()
+  }
+
   for (const entry of plan) {
     if (entry.state === 'current') continue
-    line(`  ${STATE_MARK[entry.state]} ${entry.path}`)
+    line(`  ${STATE_MARK[entry.state]} ${regionLabel(entry)}`)
   }
   for (const entry of retired) {
     line(`  ${STATE_MARK[entry.state]} ${regionLabel(entry)}`)
@@ -186,8 +197,8 @@ export async function syncCommand(sourceRoot, targetRoot, { write }) {
   line()
   for (const conflict of conflicts) line(`    ${style.yellow('!')} ${conflict.rule}`)
   line()
-  line(`  Run ${style.bold('/resolve-standards-conflicts')} in your agent to merge them,`)
-  line(`  or resolve by hand and run ${style.bold('standards resolve <rule>')}.`)
+  line(`  Ask your agent to resolve the standards conflicts — AGENTS.md explains how —`)
+  line(`  or merge by hand and run ${style.bold('standards resolve <rule>')}.`)
   line()
   line(style.dim(`  Details: ${CONFIG_DIR}/conflicts.json`))
   line()

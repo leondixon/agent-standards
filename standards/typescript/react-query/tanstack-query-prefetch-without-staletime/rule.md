@@ -4,7 +4,7 @@ title: Prefetch needs staleTime
 layer: frontend
 presets: [react-query]
 severity: warn
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

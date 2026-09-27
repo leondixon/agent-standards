@@ -4,7 +4,7 @@ title: Prisma enum value imports are camelCase
 layer: any
 presets: [prisma]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

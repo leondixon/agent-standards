@@ -105,7 +105,7 @@ jq -n --arg file "$file_path" --arg names "$names_list" '{
       + "\"entity + Prisma include\" (`CampaignWithPartner`, `getUserWithRoles`, "
       + "`userWithRolesInclude`). Prefer inferred `include` return types, a real "
       + "domain name (`AuthorizedUser`), split query vs projection, or inline "
-      + "handler mapping (`.claude/rules/no-composite-join-names.md`)."
+      + "handler mapping (see the No composite join names rule in AGENTS.md)."
     )
   }
 }'

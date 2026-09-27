@@ -4,7 +4,7 @@ title: Schemas use optional, not nullable
 layer: any
 presets: [zod]
 severity: warn
-outputs: [claude-rule, agents-md, hook]
+outputs: [agents-md, hook]
 ---
 
 Prefer `.optional()` over `.nullable()` and `.nullish()` in schemas. A codebase that

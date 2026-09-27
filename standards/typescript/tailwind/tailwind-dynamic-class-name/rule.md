@@ -4,7 +4,7 @@ title: No dynamically built class names
 layer: frontend
 presets: [tailwind]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

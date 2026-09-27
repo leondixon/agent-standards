@@ -87,16 +87,15 @@ describe('buildArtefacts', () => {
     )).toThrow('no Cargo.toml')
   })
 
-  it('given one id in two language trees, when planned, then each gets its own rule file', () => {
-    const rule = language => selected({ id: 'no-banner-comments', title: 'No banner comments', language, severity: 'error', body: 'x', outputs: ['claude-rule'] })
+  it('given one id in two language trees, when planned, then each gets its own AGENTS.md block', () => {
+    const rule = language => selected({ id: 'no-banner-comments', title: 'No banner comments', language, severity: 'error', body: 'x', outputs: ['agents-md'] })
     const artefacts = buildArtefacts(
       [rule('typescript'), rule('rust')],
       { languages: ['rust', 'typescript'], presets: ['base'], layers: { any: ['**/*'] }, sourcePath: findSourceRoot() },
     )
 
-    expect(artefacts.map(entry => entry.path).filter(path => path.startsWith('.claude/rules/'))).toEqual([
-      '.claude/rules/no-banner-comments-typescript.md',
-      '.claude/rules/no-banner-comments-rust.md',
-    ])
+    const blocks = artefacts.filter(entry => entry.path === 'AGENTS.md' && entry.rule === 'no-banner-comments')
+    expect(blocks.map(entry => entry.region)).toEqual(['no-banner-comments-rust', 'no-banner-comments-typescript'])
+    expect(blocks[0].content).toContain('### No banner comments (Rust)')
   })
 })

@@ -5,10 +5,10 @@ import { ConfigurationError } from './errors.js'
 import { appliesTo } from './layers.js'
 import { STANDARDS_REGION, regionKey, wrapRegion } from './region.js'
 import {
-  generateAgentsMd,
+  generateAgentsIntro,
+  generateAgentsRule,
   generateCargoLints,
   generateClaudeHooks,
-  generateClaudeRule,
   generateClippyConfig,
   generateEslintConfig,
   generateOxlintConfig,
@@ -46,16 +46,10 @@ function sharedIds(rules) {
 export function buildArtefacts(rules, config) {
   const selected = selectRules(rules, config)
   const artefacts = []
-  const shared = sharedIds(selected)
+
+  artefacts.push(...agentsArtefacts(selected, config))
 
   for (const rule of selected) {
-    if (rule.outputs.includes('claude-rule')) {
-      artefacts.push({
-        path: join('.claude', 'rules', shared.has(rule.id) ? `${rule.id}-${rule.language}.md` : `${rule.id}.md`),
-        content: generateClaudeRule(rule, config.layers, config.languages),
-        rule: rule.id,
-      })
-    }
     if (rule.outputs.includes('hook') && rule.hookPath) {
       artefacts.push({
         path: join('.standards', 'hooks', `${rule.id}.sh`),
@@ -92,20 +86,6 @@ export function buildArtefacts(rules, config) {
     })
   }
 
-  const instructionsFile = config.instructionsFile ?? 'AGENTS.md'
-  artefacts.push({
-    path: instructionsFile,
-    region: STANDARDS_REGION,
-    content: wrapRegion(generateAgentsMd(selected).trimEnd(), instructionsFile),
-    rule: '(agents md)',
-  })
-
-  artefacts.push({
-    path: join('.claude', 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
-    content: template(config, 'skills', 'resolve-standards-conflicts', 'SKILL.md'),
-    rule: '(conflict skill)',
-  })
-
   artefacts.push(...rustArtefacts(selected, config))
 
   const hookRules = selected.filter(rule => rule.outputs.includes('hook') && rule.hookPath)
@@ -137,6 +117,43 @@ export function buildArtefacts(rules, config) {
   }
 
   return artefacts
+}
+
+const AGENTS_FILE = 'AGENTS.md'
+
+function readingOrder(rule) {
+  const language = rule.language === 'core' ? '' : rule.language
+  const preset = rule.preset === 'base' ? '' : rule.preset
+  return `${language}/${preset}/${rule.id}`
+}
+
+/**
+ * AGENTS.md gets one managed block per rule, so drift and conflicts stay per
+ * rule even though every rule lives in the same file.
+ */
+function agentsArtefacts(selected, config) {
+  const shared = sharedIds(selected)
+  const block = (region, body, rule) => ({
+    path: AGENTS_FILE,
+    region,
+    content: wrapRegion(body, AGENTS_FILE, region),
+    rule,
+  })
+
+  const rules = selected
+    .filter(rule => rule.outputs.includes('agents-md'))
+    .sort((a, b) => readingOrder(a).localeCompare(readingOrder(b)))
+    .map((rule) => {
+      const qualified = shared.has(rule.id)
+      const body = generateAgentsRule(rule, { layers: config.layers, languages: config.languages, qualified })
+      return block(qualified ? `${rule.id}-${rule.language}` : rule.id, body, rule.id)
+    })
+
+  return [
+    block('intro', generateAgentsIntro(), '(agents md)'),
+    ...rules,
+    block('resolve-conflicts', template(config, 'agents-md', 'resolve-conflicts.md').trimEnd(), '(conflict procedure)'),
+  ]
 }
 
 function template(config, ...segments) {

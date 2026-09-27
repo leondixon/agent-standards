@@ -4,7 +4,7 @@ title: Table columns are memoised
 layer: frontend
 presets: [react-query]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

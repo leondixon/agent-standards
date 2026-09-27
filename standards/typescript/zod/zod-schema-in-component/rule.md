@@ -4,7 +4,7 @@ title: Schemas live outside components
 layer: frontend
 presets: [zod]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

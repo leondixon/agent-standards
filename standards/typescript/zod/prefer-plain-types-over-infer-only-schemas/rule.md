@@ -4,7 +4,7 @@ title: Plain types over infer-only schemas
 layer: any
 presets: [zod]
 severity: warn
-outputs: [claude-rule, agents-md]
+outputs: [agents-md]
 ---
 
 A schema must earn its runtime cost. If one exists only to derive a type through

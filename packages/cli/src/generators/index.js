@@ -1,5 +1,4 @@
-export { generateClaudeRule } from './claude-rule.js'
-export { generateAgentsMd } from './agents-md.js'
+export { generateAgentsIntro, generateAgentsRule } from './agents-md.js'
 export { generateEslintConfig } from './eslint-config.js'
 export { generateEslintPlugin } from './eslint-plugin.js'
 export { generateOxlintConfig } from './oxlint-config.js'

@@ -4,7 +4,7 @@ title: Narrative code structure
 layer: any
 presets: [base]
 severity: warn
-outputs: [claude-rule, agents-md]
+outputs: [agents-md]
 ---
 
 Keep orchestration at the call site so sequencing, decisions, and side effects read

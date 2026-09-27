@@ -4,7 +4,7 @@ title: No deprecated APIs
 layer: any
 presets: [base]
 severity: warn
-outputs: [claude-rule, agents-md, hook]
+outputs: [agents-md, hook]
 ---
 
 Do not call APIs the compiler reports as deprecated. A deprecation is the author

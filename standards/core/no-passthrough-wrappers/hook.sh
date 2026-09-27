@@ -119,7 +119,7 @@ jq -n --arg file "$file_path" --arg helpers "$helpers_list" '{
     additionalContext: (
       "Single-use helper(s) newly added in \($file):\n"
       + $helpers
-      + "\nReview the call site against `.claude/rules/narrative-structure.md`. "
+      + "\nReview the call site against the Narrative code structure rule in AGENTS.md. "
       + "Keep sequencing, decisions, and side effects visible there so it reads "
       + "top-to-bottom as a story. Inline pass-through and middle-layer wrappers "
       + "that merely rename, reorder, or group calls — including exported helpers "

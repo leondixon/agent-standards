@@ -4,7 +4,7 @@ title: No query data copied into state
 layer: frontend
 presets: [react-query]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

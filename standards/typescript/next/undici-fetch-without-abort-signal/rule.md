@@ -4,7 +4,7 @@ title: Fetch carries an abort signal
 layer: backend
 presets: [next]
 severity: warn
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

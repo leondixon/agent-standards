@@ -4,7 +4,7 @@ title: No single- or two-property params objects
 layer: any
 presets: [base]
 severity: error
-outputs: [claude-rule, agents-md, eslint]
+outputs: [agents-md, eslint]
 eslint:
   own: true
 ---

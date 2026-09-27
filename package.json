@@ -2,7 +2,7 @@
   "name": "@leondixon/agent-standards",
   "version": "0.1.0",
   "type": "module",
-  "description": "Portable coding standards for Claude Code: one rule source, generated rules, lint configs, and hooks",
+  "description": "Portable coding standards: one rule source for AGENTS.md, lint configs, and Claude Code hooks",
   "license": "MIT",
   "author": "Leon Dixon",
   "repository": {

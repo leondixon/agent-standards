@@ -4,7 +4,7 @@ title: Strict Clippy
 layer: any
 presets: [base]
 severity: warn
-outputs: [claude-rule, agents-md, cargo-lints]
+outputs: [agents-md, cargo-lints]
 lints:
   clippy: { pedantic: { level: warn, priority: -1 } }
 ---

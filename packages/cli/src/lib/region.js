@@ -5,9 +5,11 @@ export const STANDARDS_REGION = 'standards'
 const HOOK_DIRECTORY = '.standards/hooks/'
 
 const MARKERS = {
-  toml: { start: '# >>> standards (managed by `standards sync`)', end: '# <<< standards' },
-  md: { start: '<!-- >>> standards (managed by `standards sync`) -->', end: '<!-- <<< standards -->' },
+  toml: () => ({ start: '# >>> standards (managed by `standards sync`)', end: '# <<< standards' }),
+  md: region => ({ start: `<!-- >>> standards:${region} -->`, end: `<!-- <<< standards:${region} -->` }),
 }
+
+const MARKDOWN_BLOCK_END = '<!-- <<< standards:'
 
 export function regionKey(path, region) {
   return region ? `${path}#${region}` : path
@@ -17,14 +19,14 @@ function extension(path) {
   return path.slice(path.lastIndexOf('.') + 1)
 }
 
-function markersFor(path) {
+function markersFor(path, region) {
   const markers = MARKERS[extension(path)]
   if (!markers) throw new Error(`No standards block markers for ${path}`)
-  return markers
+  return markers(region)
 }
 
-function bounds(lines, path) {
-  const { start: startMarker, end: endMarker } = markersFor(path)
+function bounds(lines, path, region) {
+  const { start: startMarker, end: endMarker } = markersFor(path, region)
   const start = lines.indexOf(startMarker)
   const end = lines.indexOf(endMarker)
 
@@ -95,26 +97,26 @@ export function serialiseHooks(hooks) {
 }
 
 /** The managed block, markers included, or undefined when the file has none. */
-export function extractRegion(text, path) {
+export function extractRegion(text, path, region) {
   if (extension(path) === 'json') {
     const owned = ownedHooks(parseSettings(text, path))
     return Object.keys(owned).length > 0 ? serialiseHooks(owned) : undefined
   }
 
   const lines = text.split('\n')
-  const found = bounds(lines, path)
+  const found = bounds(lines, path, region)
   if (!found) return undefined
   return `${lines.slice(found.start, found.end + 1).join('\n')}\n`
 }
 
-export function removeRegion(text, path) {
+export function removeRegion(text, path, region) {
   if (extension(path) === 'json') {
     const remaining = withoutOwnedHooks(parseSettings(text, path))
     return Object.keys(remaining).length > 0 ? serialise(remaining) : ''
   }
 
   const lines = text.split('\n')
-  const found = bounds(lines, path)
+  const found = bounds(lines, path, region)
   if (!found) return text
   const before = lines.slice(0, found.start).join('\n').replace(/\n+$/, '')
   const after = lines.slice(found.end + 1).join('\n').replace(/^\n+/, '')
@@ -123,10 +125,11 @@ export function removeRegion(text, path) {
 }
 
 /**
- * Replace the managed block in place, or append it. Appending keeps the block
- * last, so no hand-written key can fall into the block's final TOML table.
+ * Replace the managed block in place, or add it. A TOML block goes last, so no
+ * hand-written key can fall into its final table. A Markdown block goes after
+ * the last standards block, so the rules stay together.
  */
-export function replaceRegion(text, block, path) {
+export function replaceRegion(text, block, path, region) {
   if (extension(path) === 'json') {
     const settings = withoutOwnedHooks(parseSettings(text, path))
     const hooks = { ...settings.hooks }
@@ -137,18 +140,24 @@ export function replaceRegion(text, block, path) {
   }
 
   const lines = text.split('\n')
-  const found = bounds(lines, path)
+  const found = bounds(lines, path, region)
 
   if (found) {
     const after = lines.slice(found.end + 1).join('\n')
     return `${lines.slice(0, found.start).join('\n')}${found.start > 0 ? '\n' : ''}${block}${after}`
   }
 
+  const lastBlock = lines.findLastIndex(line => line.startsWith(MARKDOWN_BLOCK_END))
+  if (extension(path) === 'md' && lastBlock !== -1) {
+    const after = lines.slice(lastBlock + 1).join('\n')
+    return `${lines.slice(0, lastBlock + 1).join('\n')}\n\n${block}${after}`
+  }
+
   const trimmed = text.replace(/\n+$/, '')
   return trimmed === '' ? block : `${trimmed}\n\n${block}`
 }
 
-export function wrapRegion(body, path) {
-  const { start, end } = markersFor(path)
+export function wrapRegion(body, path, region) {
+  const { start, end } = markersFor(path, region)
   return `${start}\n${body}\n${end}\n`
 }
